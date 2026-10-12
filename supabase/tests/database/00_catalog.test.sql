@@ -1,6 +1,6 @@
 -- 構成の自動点検（テスト 1-10, 03 §4.4）
 begin;
-select plan(9);
+select plan(11);
 
 select is_empty(
   $$ select c.relname::text from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -45,6 +45,17 @@ select ok(
 select is(
   (select count(*)::int from private.schema_migrations where version = '20261012000001'),
   1, 'マイグレーションの適用記録がある');
+
+select is_empty(
+  $$ select u.id::text from auth.users u
+     where u.email is not null and not exists (select 1 from public.profiles p where p.id = u.id) $$,
+  'メールのある全ユーザー（適用前からいたユーザーを含む）にプロフィールがある');
+
+select is_empty(
+  $$ select p.email from public.profiles p
+     where p.status = 'active'
+       and not exists (select 1 from public.allowed_emails a where a.email = p.email and a.revoked_at is null) $$,
+  '招待されていない有効ユーザーはいない（適用前からいたユーザーは停止で作られる）');
 
 select * from finish();
 rollback;

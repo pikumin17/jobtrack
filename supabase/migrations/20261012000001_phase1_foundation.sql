@@ -294,6 +294,16 @@ revoke all on function private.handle_new_user() from public, anon, authenticate
 create trigger on_auth_user_created after insert on auth.users
   for each row execute function private.handle_new_user();
 
+-- このSQLを適用する前から auth.users にいたユーザーにも、プロフィールと通知設定を作る。
+-- 適用時点では誰も招待されていないため、全員「停止」で作る。本人は bootstrap-admin.sql で有効にし、
+-- ほかの人は管理者が招待したときに有効になる。
+insert into public.profiles (id, email, status)
+  select u.id, lower(u.email), 'suspended' from auth.users u where u.email is not null
+  on conflict do nothing;
+insert into public.notification_settings (user_id, email_address)
+  select p.id, p.email from public.profiles p
+  on conflict do nothing;
+
 -- ---------------------------------------------------------------------
 -- 7. 招待判定フック（Supabase Auth の Before User Created フック, 03 §2.1）
 --    ダッシュボードのフック選択画面に表示させるため public に置く。
@@ -401,6 +411,8 @@ begin
 
   if not found then
     insert into public.allowed_emails (email, invited_by, note) values (v_email, v_actor, v_note);
+    -- 招待前にユーザーが作られていた場合（フック無効中のログイン、適用前からいたユーザー）は停止状態なので、ここで有効にする
+    update public.profiles set status = 'active' where email = v_email and status <> 'active';
     insert into public.admin_audit_log (actor_id, action, target_email) values (v_actor, 'invite', v_email);
   elsif v_prev.revoked_at is not null then
     -- 再招待: アクセスだけを戻す。データは取り消し中も保持している（A-3）

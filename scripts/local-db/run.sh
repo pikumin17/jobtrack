@@ -10,6 +10,8 @@ dropdb --if-exists "$DB"
 createdb "$DB"
 "${PSQL[@]}" -d "$DB" -c "alter database \"$DB\" set search_path = \"\$user\", public, extensions"
 "${PSQL[@]}" -d "$DB" -f scripts/local-db/supabase-stub.sql
+# 適用前から既にいるユーザー（本番で以前にログインを試した場合など）を再現する
+"${PSQL[@]}" -d "$DB" -c "insert into auth.users (email) values ('Preexisting@example.com')"
 for f in supabase/migrations/*.sql; do
   echo "== apply $f"
   # SQL Editor と同じく、ファイル全体を1回の実行（1トランザクション）として流す

@@ -1,7 +1,7 @@
 -- フェーズ1のセキュリティテスト（03 §8.1 の S-01〜S-04, S-06〜S-09, S-12, S-13, S-16）
 -- 利用者 A・B、停止中 C、管理者 M、未ログイン（anon）で、データの分離と権限を確認する。
 begin;
-select plan(54);
+select plan(57);
 
 -- ---------------------------------------------------------------- 準備（管理者権限で作成）
 insert into public.allowed_emails (email, note) values
@@ -148,6 +148,7 @@ select is((select count(*)::int from public.companies), 0, 'S-09 管理者でも
 select is((select count(*)::int from public.admin_list_members()), 4, '管理者はメンバー一覧（許可リストの4件）を見られる');
 select lives_ok($$select public.admin_revoke('A@example.com')$$, '管理者は A の招待を取り消せる');
 select throws_ok($$select public.admin_revoke('m@example.com')$$, '42501', null, '管理者は自分（管理者）を取り消せない');
+select lives_ok($$select public.admin_invite('Stranger@example.com')$$, '停止状態で作られたユーザーのメールを管理者が初めて招待できる');
 reset role;
 
 -- 取り消された A は次の操作から拒否される
@@ -167,15 +168,22 @@ set local request.jwt.claims = '{"sub":"11111111-1111-1111-1111-111111111111","r
 select results_eq('select name from public.companies', $$values ('A社'::text)$$, '再招待後の A は元のデータを使える');
 reset role;
 
+-- 回帰: 招待前に停止状態で作られたユーザーは、初めての招待で有効になる
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}';
+select is((select status from public.profiles), 'active', '初めて招待されたユーザーのプロフィールが有効になる');
+select lives_ok($$insert into public.companies (name) values ('招待後の企業')$$, '初めて招待されたユーザーは企業を登録できる');
+reset role;
+
 select results_eq(
   $$select action, target_email from public.admin_audit_log order by created_at, action desc$$,
-  $$values ('revoke'::text, 'a@example.com'::text), ('restore_access', 'a@example.com')$$,
-  '取り消しと再有効化が監査ログに残る');
+  $$values ('revoke'::text, 'a@example.com'::text), ('restore_access', 'a@example.com'), ('invite', 'stranger@example.com')$$,
+  '招待・取り消し・再有効化が監査ログに残る');
 
 -- ---------------------------------------------------------------- S-12 / S-13 招待判定フック
 -- Supabase では postgres から supabase_auth_admin に切り替えられないため、関数の判定結果を直接確かめる。
 -- 実行権限が supabase_auth_admin だけにあることは 00_catalog で検査している。
-select is(public.hook_before_user_created('{"user":{"email":"stranger@example.com"}}') -> 'error' ->> 'http_code',
+select is(public.hook_before_user_created('{"user":{"email":"nobody@example.com"}}') -> 'error' ->> 'http_code',
   '403', 'S-12 許可リスト外のメールは拒否される');
 select is(public.hook_before_user_created('{"user":{"email":"c@example.com"}}') -> 'error' ->> 'http_code',
   '403', 'S-13 取り消し済みのメールは拒否される');
