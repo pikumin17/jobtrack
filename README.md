@@ -34,6 +34,6 @@ scripts/local-db/run.sh      # Postgres + pgTAP がある環境で、マイグ�
 
 ## 本番DBの初期設定（フェーズ1）
 
-1. `supabase/migrations/20261012000001_phase1_foundation.sql` を SQL Editor で実行
+1. `supabase/migrations/` の SQL を番号順に SQL Editor で実行（20261012000001 → 20261012000002）
 2. Authentication → Hooks で Before User Created に `public.hook_before_user_created` を登録
 3. `supabase/admin/bootstrap-admin.sql` の手順で、自分を許可リストと管理者に登録
