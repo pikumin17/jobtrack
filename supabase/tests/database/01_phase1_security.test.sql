@@ -163,14 +163,14 @@ select results_eq(
   '取り消しと再有効化が監査ログに残る');
 
 -- ---------------------------------------------------------------- S-12 / S-13 招待判定フック
-set local role supabase_auth_admin;
+-- Supabase では postgres から supabase_auth_admin に切り替えられないため、関数の判定結果を直接確かめる。
+-- 実行権限が supabase_auth_admin だけにあることは 00_catalog で検査している。
 select is(public.hook_before_user_created('{"user":{"email":"stranger@example.com"}}') -> 'error' ->> 'http_code',
   '403', 'S-12 許可リスト外のメールは拒否される');
 select is(public.hook_before_user_created('{"user":{"email":"c@example.com"}}') -> 'error' ->> 'http_code',
   '403', 'S-13 取り消し済みのメールは拒否される');
 select is(public.hook_before_user_created('{"user":{"email":"B@Example.com"}}'),
   '{}'::jsonb, '招待済みのメールは大文字小文字を問わず許可される');
-reset role;
 
 select * from finish();
 rollback;
