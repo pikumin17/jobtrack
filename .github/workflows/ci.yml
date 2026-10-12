@@ -1,0 +1,42 @@
+# アプリの検査（lint・型・テスト・ビルド・秘密情報の混入）。本番には一切接続しない。
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - name: test (TZ=UTC)
+        run: npm test
+        env:
+          TZ: UTC
+      - name: test (TZ=America/Los_Angeles)
+        run: npm test
+        env:
+          TZ: America/Los_Angeles
+      - name: build（ダミーの公開値でビルド）
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: https://example.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_dummy
+      - run: npm run check:secrets

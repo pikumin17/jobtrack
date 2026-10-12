@@ -1,0 +1,14 @@
+{
+  "name": "JobTrack",
+  "short_name": "JobTrack",
+  "description": "就職活動の応募・選考・予定を管理する招待制アプリ",
+  "lang": "ja",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#FBF8F1",
+  "theme_color": "#3F5B47",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

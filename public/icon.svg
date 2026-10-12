@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="JobTrack">
+  <rect width="64" height="64" rx="14" fill="#3F5B47"/>
+  <path d="M14 46 C 24 46, 22 30, 32 30 S 40 18, 50 18" fill="none" stroke="#FBF8F1" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="14" cy="46" r="4.5" fill="#FBF8F1"/>
+  <circle cx="32" cy="30" r="3.5" fill="#C9DCCB"/>
+  <circle cx="50" cy="18" r="5" fill="#FBF8F1"/>
+</svg>
