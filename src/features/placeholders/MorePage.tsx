@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { useAuth } from '@/features/auth/auth-context'
@@ -10,11 +10,14 @@ export function MorePage() {
   const { session } = useAuth()
   const profile = useProfile()
   const queryClient = useQueryClient()
-  const navigate = useNavigate()
 
   async function logout() {
-    await signOutAndClear(queryClient)
-    navigate('/login', { replace: true })
+    try {
+      await signOutAndClear(queryClient)
+    } finally {
+      // 画面を読み込み直して、メモリ上に残った状態も確実に消す（A-5, テスト 1-14）
+      window.location.replace('/login')
+    }
   }
 
   return (

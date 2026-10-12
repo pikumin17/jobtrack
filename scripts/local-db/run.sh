@@ -19,9 +19,14 @@ for f in supabase/migrations/*.sql; do
 done
 
 echo "== re-apply guard check"
-if "${PSQL[@]}" -d "$DB" -1 -f supabase/migrations/20261012000001_phase1_foundation.sql 2>/dev/null; then
-  echo "二重適用が止まりませんでした" >&2; exit 1
-fi
+for f in supabase/migrations/*.sql; do
+  if "${PSQL[@]}" -d "$DB" -1 -f "$f" 2>/dev/null; then
+    echo "二重適用が止まりませんでした: $f" >&2; exit 1
+  fi
+done
 echo "ok: 二重適用は拒否された"
 
 pg_prove -d "$DB" supabase/tests/database/*.sql
+
+echo "== race check"
+scripts/local-db/race-check.sh "$DB"

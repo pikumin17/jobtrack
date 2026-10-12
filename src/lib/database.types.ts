@@ -73,9 +73,8 @@ export type Database = {
           created_at: string
           updated_at: string
         }
+        // 登録時に指定できるのは利用者が編集できる列だけ（20261012000002 の列単位の権限）
         Insert: {
-          id?: string
-          user_id?: string
           name: string
           application_type?: string | null
           preference?: number | null
@@ -89,12 +88,13 @@ export type Database = {
           login_id_hint?: string | null
           contact_person?: string | null
           memo?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['companies']['Insert']> & {
           final_outcome?: FinalOutcome | null
           final_outcome_at?: string | null
           closed_reason?: string | null
           deleted_at?: string | null
         }
-        Update: Partial<Database['public']['Tables']['companies']['Insert']>
         Relationships: []
       }
       notification_settings: {

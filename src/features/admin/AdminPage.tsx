@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { useAuth } from '@/features/auth/auth-context'
 import { formatJstDateTime } from '@/lib/dates'
 import type { MemberRow } from '@/lib/database.types'
+import { userFacingMessage } from '@/lib/errors'
 import { inviteSchema, useInvite, useMembers, useRevoke } from './api'
 
 export function AdminPage() {
@@ -72,12 +73,12 @@ export function AdminPage() {
           />
         </div>
         {formError && <p className="text-sm text-danger">{formError}</p>}
-        {invite.isError && <ErrorMessage message="招待できませんでした。もう一度お試しください。" />}
+        {invite.isError && <ErrorMessage message={userFacingMessage(invite.error, '招待できませんでした。もう一度お試しください。')} />}
         <Button type="submit" disabled={invite.isPending}>{invite.isPending ? '招待中…' : '招待する'}</Button>
       </form>
 
       <h2 className="mb-2 font-bold">メンバー</h2>
-      {revoke.isError && <div className="mb-3"><ErrorMessage message="取り消しできませんでした。自分自身の招待は取り消せません。" /></div>}
+      {revoke.isError && <div className="mb-3"><ErrorMessage message={userFacingMessage(revoke.error, '取り消しできませんでした。もう一度お試しください。')} /></div>}
       {members.isPending ? (
         <LoadingScreen />
       ) : members.isError ? (
@@ -94,12 +95,12 @@ export function AdminPage() {
                     {row.role === 'admin' && <span className="ml-2 rounded-full bg-sage-100 px-2 py-0.5 text-xs text-sage-800">管理者</span>}
                   </p>
                   <p className="text-xs text-muted">
-                    {revoked ? '取り消し済み' : row.user_id ? '利用中' : '未ログイン'}
+                    {revoked ? '取り消し済み' : !row.user_id ? '未ログイン' : row.status === 'active' ? '利用中' : '停止中（「再招待」で有効にできます）'}
                     {row.note ? `・${row.note}` : ''}
                     {row.last_sign_in_at ? `・最終ログイン ${formatJstDateTime(row.last_sign_in_at)}` : ''}
                   </p>
                 </div>
-                {revoked ? (
+                {revoked || (row.user_id && row.status !== 'active') ? (
                   <Button variant="secondary" onClick={() => invite.mutate({ email: row.email, note: row.note ?? '' })}>
                     再招待
                   </Button>

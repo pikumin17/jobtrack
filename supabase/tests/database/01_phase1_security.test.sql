@@ -75,11 +75,11 @@ select throws_ok($$insert into public.companies (user_id, name) values ('2222222
   '42501', null, 'S-03 A は user_id=B で企業を登録できない');
 
 -- 正常系: user_id を省略すると自分のものになる
-select lives_ok($$insert into public.companies (id, name) values ('aaaaaaaa-0000-0000-0000-000000000002', 'A社2')$$,
+select lives_ok($$insert into public.companies (name) values ('A社2')$$,
   'A は企業名だけで登録できる');
-select is((select user_id::text from public.companies where id = 'aaaaaaaa-0000-0000-0000-000000000002'),
+select is((select user_id::text from public.companies where name = 'A社2'),
   '11111111-1111-1111-1111-111111111111', '登録した企業の所有者は自分');
-select is((select application_status || '/' || selection_status from public.companies where id = 'aaaaaaaa-0000-0000-0000-000000000002'),
+select is((select application_status || '/' || selection_status from public.companies where name = 'A社2'),
   'not_applied/not_started', '新規企業は未応募・選考前');
 
 -- S-04 所有者の付け替え
@@ -106,12 +106,12 @@ select throws_ok($$update public.companies set recruit_url = 'javascript:alert(1
 select throws_ok($$insert into public.companies (name) values ('   ')$$, '23514', null, '企業名は空にできない');
 
 -- 完全削除はゴミ箱内だけ
-delete from public.companies where id = 'aaaaaaaa-0000-0000-0000-000000000002';
-select is((select count(*)::int from public.companies where id = 'aaaaaaaa-0000-0000-0000-000000000002'), 1,
+delete from public.companies where name = 'A社2';
+select is((select count(*)::int from public.companies where name = 'A社2'), 1,
   'ゴミ箱に入れていない企業は完全削除されない');
-update public.companies set deleted_at = now() where id = 'aaaaaaaa-0000-0000-0000-000000000002';
-delete from public.companies where id = 'aaaaaaaa-0000-0000-0000-000000000002';
-select is((select count(*)::int from public.companies where id = 'aaaaaaaa-0000-0000-0000-000000000002'), 0,
+update public.companies set deleted_at = now() where name = 'A社2';
+delete from public.companies where name = 'A社2';
+select is((select count(*)::int from public.companies where name = 'A社2'), 0,
   'ゴミ箱内の企業は完全削除できる');
 
 -- S-07 権限の昇格

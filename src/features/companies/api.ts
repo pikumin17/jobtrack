@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { z } from 'zod'
 import type { Company } from '@/lib/database.types'
+import { isPermissionError } from '@/lib/errors'
 import { supabase } from '@/lib/supabase'
 
 export const companyNameSchema = z
@@ -36,5 +37,9 @@ export function useAddCompany() {
       if (error) throw error
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: companiesKey }),
+    // 招待が取り消された等で拒否されたら、プロフィールを読み直して招待外の画面へ移す
+    onError: (error) => {
+      if (isPermissionError(error)) void queryClient.invalidateQueries({ queryKey: ['profile'] })
+    },
   })
 }
