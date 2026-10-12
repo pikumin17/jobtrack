@@ -278,8 +278,13 @@ set search_path = ''
 as $$
 declare
   v_email text := lower(new.email);
+  v_status text;
 begin
-  insert into public.profiles (id, email) values (new.id, v_email);
+  -- 招待判定フックが未登録・無効のときでも、招待されていない人を有効メンバーにしない（多層防御）
+  v_status := case when exists (
+      select 1 from public.allowed_emails a where a.email = v_email and a.revoked_at is null
+    ) then 'active' else 'suspended' end;
+  insert into public.profiles (id, email, status) values (new.id, v_email, v_status);
   insert into public.notification_settings (user_id, email_address) values (new.id, v_email);
   return new;
 end;

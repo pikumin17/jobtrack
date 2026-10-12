@@ -1,7 +1,7 @@
 -- フェーズ1のセキュリティテスト（03 §8.1 の S-01〜S-04, S-06〜S-09, S-12, S-13, S-16）
 -- 利用者 A・B、停止中 C、管理者 M、未ログイン（anon）で、データの分離と権限を確認する。
 begin;
-select plan(52);
+select plan(54);
 
 -- ---------------------------------------------------------------- 準備（管理者権限で作成）
 insert into public.allowed_emails (email, note) values
@@ -29,6 +29,16 @@ select is((select role || '/' || status from public.profiles where id = '1111111
   'member/active', '新規ユーザーは一般メンバー・有効');
 select is((select email_enabled from public.notification_settings where user_id = '11111111-1111-1111-1111-111111111111'),
   false, '通知設定の行が作られ、メール通知は初期OFF');
+
+-- フックが無効でユーザーが作られてしまっても、招待されていなければ有効メンバーにならない
+insert into auth.users (id, email) values ('55555555-5555-5555-5555-555555555555', 'stranger@example.com');
+select is((select status from public.profiles where id = '55555555-5555-5555-5555-555555555555'),
+  'suspended', '許可リストにないメールで作られたユーザーは停止状態になる');
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"55555555-5555-5555-5555-555555555555","role":"authenticated"}';
+select throws_ok($$insert into public.companies (name) values ('x')$$, '42501', null,
+  '招待されていないユーザーはデータを登録できない');
+reset role;
 
 -- ---------------------------------------------------------------- S-01 未ログイン
 set local role anon;
@@ -135,7 +145,7 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"44444444-4444-4444-4444-444444444444","role":"authenticated"}';
 select is((select count(*)::int from public.companies), 0, 'S-09 管理者でも他人の企業は見えない');
-select is((select count(*)::int from public.admin_list_members()), 4, '管理者はメンバー一覧を見られる');
+select is((select count(*)::int from public.admin_list_members()), 4, '管理者はメンバー一覧（許可リストの4件）を見られる');
 select lives_ok($$select public.admin_revoke('A@example.com')$$, '管理者は A の招待を取り消せる');
 select throws_ok($$select public.admin_revoke('m@example.com')$$, '42501', null, '管理者は自分（管理者）を取り消せない');
 reset role;
