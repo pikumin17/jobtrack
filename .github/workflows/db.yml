@@ -1,0 +1,48 @@
+# データベースの検査（マイグレーションの適用と pgTAP テスト）。
+# CI 用の使い捨てデータベースだけを使い、本番には一切接続しない（05 §7）。
+name: DB
+
+on:
+  pull_request:
+    paths: ['supabase/**', 'scripts/local-db/**', '.github/workflows/db.yml']
+  push:
+    branches: [main]
+    paths: ['supabase/**', 'scripts/local-db/**', '.github/workflows/db.yml']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 素の Postgres に Supabase の最小環境を再現して検査する（速い）
+  postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Postgres と pgTAP を準備
+        run: |
+          PGV=$(ls /usr/lib/postgresql | sort -n | tail -1)
+          sudo apt-get update -q
+          sudo apt-get install -y -q "postgresql-${PGV}-pgtap" libtap-parser-sourcehandler-pgtap-perl
+          sudo systemctl start postgresql
+          sudo -u postgres createuser --superuser "$USER"
+      - name: マイグレーションとテスト
+        run: scripts/local-db/run.sh
+        env:
+          PGDATABASE: postgres
+
+  # Supabase CLI のローカル DB（本物と同じイメージ）で検査する
+  supabase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - run: supabase db start
+      - run: supabase test db

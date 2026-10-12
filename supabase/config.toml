@@ -1,0 +1,29 @@
+# ローカル開発・CI 用の Supabase CLI 設定。本番には使わない（本番はダッシュボードで設定する）。
+project_id = "jobtrack"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+major_version = 17
+
+[db.seed]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173/**"]
+enable_signup = true
+
+[auth.email]
+enable_signup = false
+
+[auth.hook.before_user_created]
+enabled = true
+uri = "pg-functions://postgres/public/hook_before_user_created"

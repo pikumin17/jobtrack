@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* デザイントークン（設計書 02 §2.3）。色を変えるときは src/styles/contrast.test.ts も通ること */
+@theme {
+  --color-cream: #fbf8f1;
+  --color-surface: #ffffff;
+  --color-line: #e4e0d5;
+  --color-ink: #2b2f2c;
+  --color-muted: #5b625c;
+  --color-sage-100: #e8f0e9;
+  --color-sage-300: #c9dccb;
+  --color-sage-500: #8fae94;
+  --color-sage-700: #3f5b47;
+  --color-sage-800: #324a39;
+  --color-warn: #845400;
+  --color-warn-bg: #fdf3dc;
+  --color-danger: #a8251c;
+  --color-danger-bg: #fbe9e7;
+
+  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+    min-height: 100dvh;
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-sage-700);
+    outline-offset: 2px;
+  }
+}
