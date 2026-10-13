@@ -24,6 +24,36 @@ export function useSteps(companyId: string) {
   })
 }
 
+// 全企業のステップ（一覧の結果待ち・次回予定の算出用）。必要な列だけ
+export const STEP_SUMMARY_COLUMNS =
+  'id, company_id, position, label, status, deadline_date, deadline_at, scheduled_at, scheduled_end_at, completed_at, result_expected_on'
+
+export type StepSummaryRow = Pick<
+  SelectionStep,
+  | 'id'
+  | 'company_id'
+  | 'position'
+  | 'label'
+  | 'status'
+  | 'deadline_date'
+  | 'deadline_at'
+  | 'scheduled_at'
+  | 'scheduled_end_at'
+  | 'completed_at'
+  | 'result_expected_on'
+>
+
+export function useAllSteps() {
+  return useQuery({
+    queryKey: ['steps', 'all'],
+    queryFn: async (): Promise<StepSummaryRow[]> => {
+      const { data, error } = await supabase.from('selection_steps').select(STEP_SUMMARY_COLUMNS)
+      if (error) throw error
+      return data
+    },
+  })
+}
+
 // ステップの変更で、企業の選考状態・更新日時と履歴も DB が書き換える。関係する表示をまとめて読み直す
 function useStepMutation<T>(companyId: string, run: (input: T) => Promise<void>) {
   const queryClient = useQueryClient()
@@ -31,7 +61,8 @@ function useStepMutation<T>(companyId: string, run: (input: T) => Promise<void>)
     mutationFn: run,
     onSettled: () =>
       Promise.all([
-        queryClient.invalidateQueries({ queryKey: stepsKey(companyId) }),
+        // 企業ごとの一覧と、全企業分（企業一覧・ホーム用）の両方
+        queryClient.invalidateQueries({ queryKey: ['steps'] }),
         queryClient.invalidateQueries({ queryKey: companiesKey }),
         queryClient.invalidateQueries({ queryKey: ['timeline', companyId] }),
       ]),
