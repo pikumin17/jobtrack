@@ -7,7 +7,12 @@ import { LoadingScreen } from '@/components/ui/LoadingScreen'
 import { Sheet } from '@/components/ui/Sheet'
 import type { Company } from '@/lib/database.types'
 import { userFacingMessage } from '@/lib/errors'
-import { APPLICATION_TYPE_LABELS, CHANNEL_LABELS } from '@/lib/labels'
+import { formatJstShort } from '@/lib/dates'
+import { APPLICATION_TYPE_LABELS, CHANNEL_LABELS, CLOSED_REASON_LABELS, FINAL_OUTCOME_LABELS } from '@/lib/labels'
+import { judgeSelectionStatus } from '@/lib/status'
+import { useSteps } from '@/features/steps/api'
+import { OutcomeSheet } from '@/features/steps/OutcomeSheet'
+import { StepsSection } from '@/features/steps/StepsSection'
 import { useCompany, useSaveCompanyInfo, useSetPreference } from './api'
 import { ApplicationStatusSection } from './ApplicationStatusSection'
 import { CompanyForm } from './CompanyForm'
@@ -15,7 +20,7 @@ import { PreferenceStars } from './PreferenceStars'
 import { isSafeHttpUrl } from './schema'
 import { StatusBadge } from './StatusBadge'
 
-// 企業詳細（設計書 02 §2.4）。選考ステップ・結果待ち・履歴の欄は後続の PR で加える
+// 企業詳細（設計書 02 §2.4）。結果待ち・次回予定・履歴の欄は後続の PR で加える
 export function CompanyDetailPage() {
   const { id = '' } = useParams()
   const company = useCompany(id)
@@ -42,17 +47,23 @@ export function CompanyDetailPage() {
 
 function CompanyDetail({ company }: { company: Company }) {
   const [editing, setEditing] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const steps = useSteps(company.id)
   const save = useSaveCompanyInfo(company.id)
   const setPreference = useSetPreference(company.id)
   // ゴミ箱内の企業は読み取りだけ（DB でも拒否される。設計書 02 §3.9）
   const readOnly = company.deleted_at !== null
+  // バッジは DB が保存した選考状態と同じ判定表で、読み込んだステップから求める（ステップを変えた直後もずれない。02 §3.5.3）
+  const selectionStatus = steps.data
+    ? judgeSelectionStatus(company.final_outcome, steps.data).status
+    : company.selection_status
 
   return (
     <div className="space-y-4">
       <header className="space-y-2">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <h1 className="text-xl font-bold break-all">{company.name}</h1>
-          <StatusBadge selectionStatus={company.selection_status} applicationStatus={company.application_status} />
+          <StatusBadge selectionStatus={selectionStatus} applicationStatus={company.application_status} />
         </div>
         {readOnly && (
           <p role="status" className="rounded-xl bg-warn-bg px-4 py-3 text-sm text-warn">
@@ -72,6 +83,40 @@ function CompanyDetail({ company }: { company: Company }) {
       </header>
 
       <ApplicationStatusSection company={company} readOnly={readOnly} />
+
+      <section aria-labelledby="outcome-heading" className="rounded-2xl border border-line bg-surface p-4">
+        <h2 id="outcome-heading" className="text-sm font-semibold text-muted">
+          結果
+        </h2>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-base font-semibold">
+            {company.final_outcome ? (
+              <>
+                {FINAL_OUTCOME_LABELS[company.final_outcome]}
+                {company.final_outcome_at && (
+                  <span className="ml-2 text-xs font-normal text-muted">
+                    {formatJstShort(company.final_outcome_at)} 記録
+                  </span>
+                )}
+                {company.closed_reason && (
+                  <span className="block text-sm font-normal text-muted">
+                    理由: {CLOSED_REASON_LABELS[company.closed_reason]}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="text-muted">未記録</span>
+            )}
+          </p>
+          {!readOnly && (
+            <Button variant="secondary" onClick={() => setRecording(true)}>
+              結果を記録
+            </Button>
+          )}
+        </div>
+      </section>
+
+      <StepsSection companyId={company.id} steps={steps.data} isError={steps.isError} readOnly={readOnly} />
 
       <section aria-labelledby="info-heading" className="rounded-2xl border border-line bg-surface p-4">
         <div className="flex items-center justify-between gap-3">
@@ -103,6 +148,7 @@ function CompanyDetail({ company }: { company: Company }) {
         </dl>
       </section>
 
+      {recording && <OutcomeSheet company={company} onClose={() => setRecording(false)} />}
       {editing && (
         <Sheet title="企業情報を編集" onClose={() => setEditing(false)} busy={save.isPending}>
           <CompanyForm

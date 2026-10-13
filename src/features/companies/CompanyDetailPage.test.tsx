@@ -11,19 +11,22 @@ const { state } = vi.hoisted(() => ({
 }))
 vi.mock('@/lib/supabase', () => ({
   supabase: {
-    from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.company, error: null }) }) }),
-      update: (values: unknown) => ({
-        eq: () => ({
-          select: async () => {
-            if (state.updateError) return { data: null, error: state.updateError }
-            state.updates.push(values)
-            state.company = { ...state.company!, ...(values as Partial<Company>) }
-            return { data: [{ id: state.company.id }], error: null }
+    from: (table: string) =>
+      table === 'selection_steps'
+        ? { select: () => ({ eq: () => ({ order: async () => ({ data: [], error: null }) }) }) }
+        : {
+            select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.company, error: null }) }) }),
+            update: (values: unknown) => ({
+              eq: () => ({
+                select: async () => {
+                  if (state.updateError) return { data: null, error: state.updateError }
+                  state.updates.push(values)
+                  state.company = { ...state.company!, ...(values as Partial<Company>) }
+                  return { data: [{ id: state.company.id }], error: null }
+                },
+              }),
+            }),
           },
-        }),
-      }),
-    }),
   },
 }))
 
@@ -182,5 +185,28 @@ describe('企業詳細', () => {
     renderPage()
     await user.click(await screen.findByRole('button', { name: '志望度 5 第一志望' }))
     expect(await screen.findByText('ゴミ箱に入っている企業は変更できません。先に復元してください')).toBeInTheDocument()
+  })
+  it('「結果を記録」で結果と終了理由を保存し、取り消すと理由も消す', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: '結果を記録' }))
+    let sheet = screen.getByRole('dialog', { name: '結果を記録' })
+    await user.click(within(sheet).getByRole('radio', { name: '不合格' }))
+    await user.selectOptions(within(sheet).getByLabelText('終了理由（任意）'), 'rejected_interview')
+    await user.click(within(sheet).getByRole('button', { name: '記録する' }))
+    expect(state.updates).toEqual([{ final_outcome: 'rejected', closed_reason: 'rejected_interview' }])
+    expect(await screen.findByText('理由: 面接不合格')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '結果を記録' }))
+    sheet = screen.getByRole('dialog', { name: '結果を記録' })
+    await user.click(within(sheet).getByRole('radio', { name: '内定' }))
+    expect(within(sheet).queryByLabelText('終了理由（任意）')).toBeNull()
+    await user.click(within(sheet).getByRole('button', { name: '記録する' }))
+    await user.click(await screen.findByRole('button', { name: '結果を記録' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '記録を取り消す' }))
+    expect(state.updates.slice(1)).toEqual([
+      { final_outcome: 'offer', closed_reason: null },
+      { final_outcome: null, closed_reason: null },
+    ])
   })
 })
