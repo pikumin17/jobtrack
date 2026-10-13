@@ -6,10 +6,11 @@ import { LoginPage } from '@/features/auth/LoginPage'
 import { NotInvitedPage } from '@/features/auth/NotInvitedPage'
 import { CompaniesPage } from '@/features/companies/CompaniesPage'
 import { CompanyDetailPage } from '@/features/companies/CompanyDetailPage'
-import { HomePage } from '@/features/placeholders/HomePage'
+import { HomePage } from '@/features/home/HomePage'
 import { MorePage } from '@/features/placeholders/MorePage'
 import { NotFoundPage } from '@/features/placeholders/NotFoundPage'
 import { PlaceholderPage } from '@/features/placeholders/PlaceholderPage'
+import { TrashPage } from '@/features/trash/TrashPage'
 import { AppShell } from './AppShell'
 
 export const routes: RouteObject[] = [
@@ -29,6 +30,7 @@ export const routes: RouteObject[] = [
       { path: 'calendar', element: <PlaceholderPage title="カレンダー" phase={3} /> },
       { path: 'analytics', element: <PlaceholderPage title="分析" phase={4} /> },
       { path: 'more', element: <MorePage /> },
+      { path: 'more/trash', element: <TrashPage /> },
       {
         path: 'more/admin',
         element: (

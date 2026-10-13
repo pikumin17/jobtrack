@@ -28,6 +28,7 @@ import { APPLICATION_TYPES } from './schema'
 import { StatusBadge } from './StatusBadge'
 import { awaitingText, daysLeftText, scheduleText } from './summaryText'
 import { useCompanyRows } from './useCompanyRows'
+import { latestByCompany, useRecentTimeline, type TimelineItem } from '@/features/timeline/api'
 
 type View = 'compact' | 'card'
 const VIEW_KEY = 'jobtrack.companies.view'
@@ -57,6 +58,8 @@ export function CompaniesPage() {
   const [filtering, setFiltering] = useState(false)
   const shown = useMemo(() => (rows ? queryCompanies(rows, filters, sort) : undefined), [rows, filters, sort])
   const filterCount = countFilters(filters)
+  const recent = useRecentTimeline(300, view === 'card')
+  const latest = useMemo(() => latestByCompany(recent.data ?? []), [recent.data])
 
   return (
     <>
@@ -135,7 +138,7 @@ export function CompaniesPage() {
       ) : (
         <ul className="grid gap-3 md:grid-cols-2" aria-label="企業一覧">
           {shown.map((row) => (
-            <CardRow key={row.company.id} row={row} />
+            <CardRow key={row.company.id} row={row} latest={latest.get(row.company.id)} />
           ))}
         </ul>
       )}
@@ -209,8 +212,8 @@ function CompactRow({ row }: { row: ListRow }) {
   )
 }
 
-// 詳細カード（02 §2.4）。最新の履歴は履歴の PR で加える
-function CardRow({ row }: { row: ListRow }) {
+// 詳細カード（02 §2.4）
+function CardRow({ row, latest }: { row: ListRow; latest: TimelineItem | undefined }) {
   const { company, summary } = row
   const attention = summary.notices.length + row.warningCount
   return (
@@ -251,6 +254,11 @@ function CardRow({ row }: { row: ListRow }) {
           </span>
         )}
         {attention > 0 && <span className="block text-xs font-semibold text-warn">⚠ 注意 {attention}件</span>}
+        {latest && (
+          <span className="block truncate text-xs text-muted">
+            最新: {formatJstShort(latest.occurred_at)} {latest.summary}
+          </span>
+        )}
       </Link>
     </li>
   )

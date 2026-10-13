@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
@@ -15,6 +15,8 @@ import { judgeSelectionStatus } from '@/lib/status'
 import { useSteps } from '@/features/steps/api'
 import { OutcomeSheet } from '@/features/steps/OutcomeSheet'
 import { StepsSection } from '@/features/steps/StepsSection'
+import { TimelineSection } from '@/features/timeline/TimelineSection'
+import { useRestoreCompany, useTrashCompany } from '@/features/trash/api'
 import { useCompany, useSaveCompanyInfo, useSetPreference } from './api'
 import { ApplicationStatusSection } from './ApplicationStatusSection'
 import { CompanyForm } from './CompanyForm'
@@ -23,7 +25,7 @@ import { isSafeHttpUrl } from './schema'
 import { StatusBadge } from './StatusBadge'
 import { SummaryBlocks } from './SummaryBlocks'
 
-// 企業詳細（設計書 02 §2.4）。結果待ち・次回予定・履歴の欄は後続の PR で加える
+// 企業詳細（設計書 02 §2.4）
 export function CompanyDetailPage() {
   const { id = '' } = useParams()
   const company = useCompany(id)
@@ -51,6 +53,10 @@ export function CompanyDetailPage() {
 function CompanyDetail({ company }: { company: Company }) {
   const [editing, setEditing] = useState(false)
   const [recording, setRecording] = useState(false)
+  const [trashing, setTrashing] = useState(false)
+  const trash = useTrashCompany()
+  const restore = useRestoreCompany()
+  const navigate = useNavigate()
   const steps = useSteps(company.id)
   const save = useSaveCompanyInfo(company.id)
   const setPreference = useSetPreference(company.id)
@@ -85,9 +91,18 @@ function CompanyDetail({ company }: { company: Company }) {
           <StatusBadge selectionStatus={selectionStatus} applicationStatus={company.application_status} />
         </div>
         {readOnly && (
-          <p role="status" className="rounded-xl bg-warn-bg px-4 py-3 text-sm text-warn">
-            この企業はゴミ箱に入っています。変更するには、先に復元してください。
-          </p>
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 rounded-xl bg-warn-bg px-4 py-3 text-sm text-warn"
+          >
+            <span className="flex-1">この企業はゴミ箱に入っています。変更するには、先に復元してください。</span>
+            <Button variant="secondary" disabled={restore.isPending} onClick={() => restore.mutate(company.id)}>
+              復元
+            </Button>
+          </div>
+        )}
+        {restore.isError && (
+          <ErrorMessage message={userFacingMessage(restore.error, '復元できませんでした。もう一度お試しください。')} />
         )}
         <PreferenceStars
           value={company.preference}
@@ -180,6 +195,55 @@ function CompanyDetail({ company }: { company: Company }) {
           <Info label="メモ">{company.memo && <span className="whitespace-pre-wrap">{company.memo}</span>}</Info>
         </dl>
       </section>
+
+      <TimelineSection companyId={company.id} />
+
+      {!readOnly && (
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              trash.reset()
+              setTrashing(true)
+            }}
+          >
+            ゴミ箱に入れる
+          </Button>
+        </div>
+      )}
+      {trashing && (
+        <Sheet title="ゴミ箱に入れますか？" onClose={() => setTrashing(false)} busy={trash.isPending}>
+          <p className="text-sm">
+            「{company.name}」とその選考ステップ・履歴をゴミ箱に移します。「その他 → ゴミ箱」から元に戻せます。
+          </p>
+          {trash.isError && (
+            <div className="mt-3">
+              <ErrorMessage
+                message={userFacingMessage(trash.error, 'ゴミ箱に移せませんでした。もう一度お試しください。')}
+              />
+            </div>
+          )}
+          <div className="mt-6 flex justify-end gap-2">
+            <Button variant="secondary" onClick={() => setTrashing(false)} disabled={trash.isPending}>
+              やめる
+            </Button>
+            <Button
+              variant="danger"
+              disabled={trash.isPending}
+              onClick={async () => {
+                try {
+                  await trash.mutateAsync(company.id)
+                  navigate('/companies')
+                } catch {
+                  // trash.error で表示
+                }
+              }}
+            >
+              ゴミ箱に入れる
+            </Button>
+          </div>
+        </Sheet>
+      )}
 
       {recording && <OutcomeSheet company={company} onClose={() => setRecording(false)} />}
       {editing && (

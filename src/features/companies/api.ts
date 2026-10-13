@@ -103,7 +103,7 @@ function useUpdateCompany<T>(id: string, toUpdate: (input: T) => CompanyUpdate) 
     onSuccess: () =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: companiesKey }),
-        queryClient.invalidateQueries({ queryKey: ['timeline', id] }),
+        queryClient.invalidateQueries({ queryKey: ['timeline'] }),
       ]),
     onError: onMutationError(queryClient),
   })
