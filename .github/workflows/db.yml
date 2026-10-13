@@ -4,10 +4,10 @@ name: DB
 
 on:
   pull_request:
-    paths: ['supabase/**', 'scripts/local-db/**', '.github/workflows/db.yml']
+    paths: ['supabase/**', 'scripts/local-db/**', 'scripts/supabase-e2e/**', '.github/workflows/db.yml']
   push:
     branches: [main]
-    paths: ['supabase/**', 'scripts/local-db/**', '.github/workflows/db.yml']
+    paths: ['supabase/**', 'scripts/local-db/**', 'scripts/supabase-e2e/**', '.github/workflows/db.yml']
 
 permissions:
   contents: read
@@ -46,3 +46,15 @@ jobs:
           version: 2.120.0
       - run: supabase db start
       - run: supabase test db
+
+  # 認証サービス・API込みの本物の Supabase で、アカウント完全削除を端から端まで確かめる（03 §8.1 S-22）
+  supabase-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - run: supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta
+      - run: scripts/supabase-e2e/account-deletion.sh

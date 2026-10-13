@@ -28,6 +28,31 @@ create table if not exists auth.users (
   created_at timestamptz not null default now()
 );
 
+-- 本物の Supabase と同じく、ユーザーにぶら下がる認証データは auth.users の削除に連動して消える
+create table if not exists auth.identities (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  identity_data jsonb
+);
+create table if not exists auth.sessions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade
+);
+create table if not exists auth.refresh_tokens (
+  id bigserial primary key,
+  token varchar(255),
+  user_id varchar(255),
+  session_id uuid references auth.sessions (id) on delete cascade
+);
+-- 認証記録（ログイン履歴）。本物と同じく auth.users との外部キーはない
+create table if not exists auth.audit_log_entries (
+  instance_id uuid,
+  id uuid primary key,
+  payload json,
+  created_at timestamptz default now(),
+  ip_address varchar(64) not null default ''
+);
+
 create or replace function auth.uid() returns uuid
 language sql stable as $$
   select coalesce(
