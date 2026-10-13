@@ -23,7 +23,8 @@ function walk(path) {
     for (const entry of readdirSync(path)) if (!skipDirs.has(entry)) walk(join(path, entry))
     return
   }
-  if (!/\.(ts|tsx|js|mjs|cjs|json|html|css|map|webmanifest|svg|example)$/.test(path) && !path.endsWith('.env.example')) return
+  if (!/\.(ts|tsx|js|mjs|cjs|json|html|css|map|webmanifest|svg|example)$/.test(path) && !path.endsWith('.env.example'))
+    return
   const text = readFileSync(path, 'utf8')
   for (const m of text.matchAll(forbiddenVite)) problems.push(`${path}: 秘密らしき名前の VITE_ 変数 ${m[0]}`)
   for (const { name, re } of forbiddenValues) {

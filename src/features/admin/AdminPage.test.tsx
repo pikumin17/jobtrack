@@ -49,7 +49,8 @@ beforeEach(() => {
   rpc.mockReset()
   rpc.mockImplementation(async (name: string) => {
     if (name === 'admin_list_members') return { data: rows, error: null }
-    if (name === 'admin_delete_account') return { data: { auth_user_deleted: true, auth_log_entries_deleted: 3 }, error: null }
+    if (name === 'admin_delete_account')
+      return { data: { auth_user_deleted: true, auth_log_entries_deleted: 3 }, error: null }
     return { data: null, error: null }
   })
 })

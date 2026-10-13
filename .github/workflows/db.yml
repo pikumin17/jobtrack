@@ -45,6 +45,8 @@ jobs:
         with:
           version: 2.120.0
       - run: supabase db start
+      # データベースの静的検査（設計書 03 §4.4）。警告が1件でもあれば失敗にする
+      - run: supabase db lint --fail-on warning
       - run: supabase test db
 
   # 認証サービス・API込みの本物の Supabase で、アカウント完全削除を端から端まで確かめる（03 §8.1 S-22）

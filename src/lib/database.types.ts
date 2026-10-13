@@ -14,13 +14,7 @@ export type SelectionStatus =
   | 'withdrawn'
   | 'closed_other'
   | 'needs_review'
-export type FinalOutcome =
-  | 'offer'
-  | 'offer_accepted'
-  | 'offer_declined'
-  | 'rejected'
-  | 'withdrawn'
-  | 'closed_other'
+export type FinalOutcome = 'offer' | 'offer_accepted' | 'offer_declined' | 'rejected' | 'withdrawn' | 'closed_other'
 
 export type DeleteAccountResult = {
   auth_user_deleted: boolean
