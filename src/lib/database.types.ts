@@ -22,6 +22,11 @@ export type FinalOutcome =
   | 'withdrawn'
   | 'closed_other'
 
+export type DeleteAccountResult = {
+  auth_user_deleted: boolean
+  auth_log_entries_deleted: number | null
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -142,6 +147,11 @@ export type Database = {
       admin_revoke: {
         Args: { p_email: string }
         Returns: undefined
+      }
+      // 20261013000001。認証記録の削除権限がない環境では auth_log_entries_deleted が null
+      admin_delete_account: {
+        Args: { p_email: string; p_confirm_email: string }
+        Returns: DeleteAccountResult
       }
     }
     Enums: { [_ in never]: never }

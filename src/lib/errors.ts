@@ -1,6 +1,6 @@
 // DB関数が日本語で返すエラー（権限・入力・見つからない）は、そのまま画面に出してよい。
 // それ以外（通信エラー、想定外のエラー）は、内部の情報を出さずに決まった文言にする。
-const USER_FACING_CODES = new Set(['42501', '22023', 'P0002'])
+const USER_FACING_CODES = new Set(['42501', '22023', 'P0002', '55000'])
 
 export function userFacingMessage(error: unknown, fallback: string): string {
   if (error && typeof error === 'object' && 'code' in error && 'message' in error) {

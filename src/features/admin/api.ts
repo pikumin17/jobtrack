@@ -42,3 +42,24 @@ export function useRevoke() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: membersKey }),
   })
 }
+
+// 完全削除（取り消し済みの人だけ）。対象と再入力の一致・管理者かどうかは DB 関数の中でも確認する
+export function useDeleteAccount() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (input: { email: string; confirmEmail: string }) => {
+      const { data, error } = await supabase.rpc('admin_delete_account', {
+        p_email: input.email,
+        p_confirm_email: input.confirmEmail,
+      })
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: membersKey }),
+  })
+}
+
+// 再入力したメールが対象と一致するか（前後の空白・大文字小文字は区別しない。DB 側と同じ扱い）
+export function confirmationMatches(target: string, typed: string): boolean {
+  return typed.trim().toLowerCase() === target.trim().toLowerCase() && typed.trim() !== ''
+}

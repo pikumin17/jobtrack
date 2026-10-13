@@ -7,12 +7,15 @@ import { useAuth } from '@/features/auth/auth-context'
 import { formatJstDateTime } from '@/lib/dates'
 import type { MemberRow } from '@/lib/database.types'
 import { userFacingMessage } from '@/lib/errors'
-import { inviteSchema, useInvite, useMembers, useRevoke } from './api'
+import { inviteSchema, useDeleteAccount, useInvite, useMembers, useRevoke } from './api'
+import { DeleteAccountDialog } from './DeleteAccountDialog'
 
 export function AdminPage() {
   const members = useMembers()
   const invite = useInvite()
   const revoke = useRevoke()
+  const deleteAccount = useDeleteAccount()
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const { session } = useAuth()
   const myEmail = session?.user.email?.toLowerCase()
   const [email, setEmail] = useState('')
@@ -101,9 +104,23 @@ export function AdminPage() {
                   </p>
                 </div>
                 {revoked || (row.user_id && row.status !== 'active') ? (
-                  <Button variant="secondary" onClick={() => invite.mutate({ email: row.email, note: row.note ?? '' })}>
-                    再招待
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="secondary" onClick={() => invite.mutate({ email: row.email, note: row.note ?? '' })}>
+                      再招待
+                    </Button>
+                    {/* 完全削除は取り消し済みの人だけ（自分・管理者には出さない。DB 側でも拒否する） */}
+                    {revoked && row.role !== 'admin' && row.email !== myEmail && (
+                      <Button
+                        variant="danger"
+                        onClick={() => {
+                          deleteAccount.reset()
+                          setDeleteTarget(row.email)
+                        }}
+                      >
+                        完全に削除
+                      </Button>
+                    )}
+                  </div>
                 ) : row.email !== myEmail ? (
                   <Button variant="danger" onClick={() => confirmRevoke(row)}>取り消し</Button>
                 ) : null}
@@ -111,6 +128,16 @@ export function AdminPage() {
             )
           })}
         </ul>
+      )}
+
+      {deleteTarget && (
+        <DeleteAccountDialog
+          email={deleteTarget}
+          pending={deleteAccount.isPending}
+          error={deleteAccount.error}
+          onConfirm={(confirmEmail) => deleteAccount.mutateAsync({ email: deleteTarget, confirmEmail })}
+          onClose={() => setDeleteTarget(null)}
+        />
       )}
     </>
   )
