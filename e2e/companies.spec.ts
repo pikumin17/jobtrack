@@ -50,7 +50,7 @@ test.describe('企業の登録と編集', () => {
 
     // 履歴は DB のトリガーが書く（画面は後続の PR）。作成・応募・志望度・企業情報の4件
     const actions = psql(
-      `select string_agg(t.action, ',' order by t.created_at, t.id) from public.timeline_entries t
+      `select string_agg(t.action, ',' order by t.occurred_at, t.id) from public.timeline_entries t
          join public.companies c on c.id = t.company_id where c.name = '${companyName}'`,
     )
     expect(actions.split(',').sort()).toEqual(['application_changed', 'created', 'preference_changed', 'updated'])
