@@ -7,7 +7,7 @@ test.use({ storageState: USERS.a.state })
 test('よくある流れを追加して進め、結果を記録する', async ({ page }, testInfo) => {
   const companyName = `E2Eステップ ${Date.now()} ${testInfo.project.name}`
   await page.goto('/companies')
-  await page.getByLabel('企業名').fill(companyName)
+  await page.getByLabel('企業名', { exact: true }).fill(companyName)
   await page.getByRole('button', { name: '追加' }).click()
   await page.getByRole('link', { name: new RegExp(companyName) }).click()
 

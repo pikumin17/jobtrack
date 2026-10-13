@@ -55,7 +55,7 @@ export function useAllSteps() {
 }
 
 // ステップの変更で、企業の選考状態・更新日時と履歴も DB が書き換える。関係する表示をまとめて読み直す
-function useStepMutation<T>(companyId: string, run: (input: T) => Promise<void>) {
+function useStepMutation<T>(run: (input: T) => Promise<void>) {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: run,
@@ -64,7 +64,7 @@ function useStepMutation<T>(companyId: string, run: (input: T) => Promise<void>)
         // 企業ごとの一覧と、全企業分（企業一覧・ホーム用）の両方
         queryClient.invalidateQueries({ queryKey: ['steps'] }),
         queryClient.invalidateQueries({ queryKey: companiesKey }),
-        queryClient.invalidateQueries({ queryKey: ['timeline', companyId] }),
+        queryClient.invalidateQueries({ queryKey: ['timeline'] }),
       ]),
     onError: (error) => {
       if (isPermissionError(error)) void queryClient.invalidateQueries({ queryKey: ['profile'] })
@@ -76,7 +76,7 @@ const notFound = { code: 'P0002', message: 'ステップが見つかりません
 
 // 1件でも複数でも1回の追加で送る（並び順は DB が末尾から順に付ける）
 export function useAddSteps(companyId: string) {
-  return useStepMutation(companyId, async (templates: StepTemplate[]) => {
+  return useStepMutation(async (templates: StepTemplate[]) => {
     const rows = templates.map((t) => ({ company_id: companyId, kind: t.kind, label: stepLabelSchema.parse(t.label) }))
     const { error } = await supabase.from('selection_steps').insert(rows)
     if (error) throw error
@@ -85,16 +85,16 @@ export function useAddSteps(companyId: string) {
 
 type StepUpdate = Database['public']['Tables']['selection_steps']['Update']
 
-export function useUpdateStep(companyId: string) {
-  return useStepMutation(companyId, async ({ id, values }: { id: string; values: StepUpdate }) => {
+export function useUpdateStep() {
+  return useStepMutation(async ({ id, values }: { id: string; values: StepUpdate }) => {
     const { data, error } = await supabase.from('selection_steps').update(values).eq('id', id).select('id')
     if (error) throw error
     if (data.length === 0) throw notFound
   })
 }
 
-export function useDeleteStep(companyId: string) {
-  return useStepMutation(companyId, async (id: string) => {
+export function useDeleteStep() {
+  return useStepMutation(async (id: string) => {
     const { data, error } = await supabase.from('selection_steps').delete().eq('id', id).select('id')
     if (error) throw error
     if (data.length === 0) throw notFound
@@ -103,7 +103,7 @@ export function useDeleteStep(companyId: string) {
 
 // 企業の全ステップを、指定した順に並べ直す（1回の RPC。他人の・別企業のステップは DB が拒否、2-05）
 export function useReorderSteps(companyId: string) {
-  return useStepMutation(companyId, async (stepIds: string[]) => {
+  return useStepMutation(async (stepIds: string[]) => {
     const { error } = await supabase.rpc('reorder_steps', { p_company_id: companyId, p_step_ids: stepIds })
     if (error) throw error
   })
@@ -111,18 +111,15 @@ export function useReorderSteps(companyId: string) {
 
 // 「結果を記録」。null で記録を取り消す（理由も消す）。記録日時は DB が付ける
 export function useRecordOutcome(companyId: string) {
-  return useStepMutation(
-    companyId,
-    async ({ outcome, reason }: { outcome: FinalOutcome | null; reason: ClosedReason | null }) => {
-      const { data, error } = await supabase
-        .from('companies')
-        .update({ final_outcome: outcome, closed_reason: outcome === null ? null : reason })
-        .eq('id', companyId)
-        .select('id')
-      if (error) throw error
-      if (data.length === 0) throw { code: 'P0002', message: '企業が見つかりません' }
-    },
-  )
+  return useStepMutation(async ({ outcome, reason }: { outcome: FinalOutcome | null; reason: ClosedReason | null }) => {
+    const { data, error } = await supabase
+      .from('companies')
+      .update({ final_outcome: outcome, closed_reason: outcome === null ? null : reason })
+      .eq('id', companyId)
+      .select('id')
+    if (error) throw error
+    if (data.length === 0) throw { code: 'P0002', message: '企業が見つかりません' }
+  })
 }
 
 // 1つ上・下へ動かしたときの id の並び

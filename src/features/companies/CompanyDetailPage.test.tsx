@@ -7,26 +7,44 @@ import { CompanyDetailPage } from './CompanyDetailPage'
 
 // supabase.from('companies') の呼び出しを記録する簡易モック
 const { state } = vi.hoisted(() => ({
-  state: { company: null as Company | null, updates: [] as unknown[], updateError: null as unknown },
+  state: {
+    company: null as Company | null,
+    updates: [] as unknown[],
+    updateError: null as unknown,
+    rpcs: [] as unknown[],
+    timeline: [] as unknown[],
+  },
 }))
 vi.mock('@/lib/supabase', () => ({
   supabase: {
+    rpc: async (name: string, args: unknown) => {
+      state.rpcs.push({ name, args })
+      return { error: null }
+    },
     from: (table: string) =>
       table === 'selection_steps'
         ? { select: () => ({ eq: () => ({ order: async () => ({ data: [], error: null }) }) }) }
-        : {
-            select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.company, error: null }) }) }),
-            update: (values: unknown) => ({
-              eq: () => ({
-                select: async () => {
-                  if (state.updateError) return { data: null, error: state.updateError }
-                  state.updates.push(values)
-                  state.company = { ...state.company!, ...(values as Partial<Company>) }
-                  return { data: [{ id: state.company.id }], error: null }
-                },
+        : table === 'timeline_entries'
+          ? {
+              select: () => ({
+                eq: () => ({
+                  order: () => ({ order: () => ({ limit: async () => ({ data: state.timeline, error: null }) }) }),
+                }),
               }),
-            }),
-          },
+            }
+          : {
+              select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.company, error: null }) }) }),
+              update: (values: unknown) => ({
+                eq: () => ({
+                  select: async () => {
+                    if (state.updateError) return { data: null, error: state.updateError }
+                    state.updates.push(values)
+                    state.company = { ...state.company!, ...(values as Partial<Company>) }
+                    return { data: [{ id: state.company.id }], error: null }
+                  },
+                }),
+              }),
+            },
   },
 }))
 
@@ -65,6 +83,7 @@ function renderPage() {
       <MemoryRouter initialEntries={['/companies/c1']}>
         <Routes>
           <Route path="/companies/:id" element={<CompanyDetailPage />} />
+          <Route path="/companies" element={<p>企業一覧の画面</p>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -75,6 +94,8 @@ beforeEach(() => {
   state.company = company()
   state.updates = []
   state.updateError = null
+  state.rpcs = []
+  state.timeline = []
   vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-13T16:30:00Z') }) // JST 10/14 01:30
 })
 afterEach(() => vi.useRealTimers())
@@ -208,5 +229,52 @@ describe('企業詳細', () => {
       { final_outcome: 'offer', closed_reason: null },
       { final_outcome: null, closed_reason: null },
     ])
+  })
+  it('履歴を新しい順に出す（書き換えの操作はない）', async () => {
+    state.timeline = [
+      {
+        id: 't2',
+        company_id: 'c1',
+        entity_type: 'company',
+        action: 'application_changed',
+        summary: '応募状態: 未応募 → 応募済み（応募日 10/12）',
+        occurred_at: '2026-10-12T03:00:00Z',
+      },
+      {
+        id: 't1',
+        company_id: 'c1',
+        entity_type: 'company',
+        action: 'created',
+        summary: '企業を登録',
+        occurred_at: '2026-10-12T01:00:00Z',
+      },
+    ]
+    renderPage()
+    const list = await screen.findByRole('list', { name: '履歴の一覧' })
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(['10/12(月) 12:00応募状態: 未応募 → 応募済み（応募日 10/12）', '10/12(月) 10:00企業を登録'])
+  })
+
+  it('ゴミ箱に入れるときは確認し、一覧に戻る', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: 'ゴミ箱に入れる' }))
+    const sheet = screen.getByRole('dialog', { name: 'ゴミ箱に入れますか？' })
+    expect(state.rpcs).toEqual([])
+    await user.click(within(sheet).getByRole('button', { name: 'ゴミ箱に入れる' }))
+    expect(state.rpcs).toEqual([{ name: 'trash_company', args: { p_company_id: 'c1' } }])
+    expect(await screen.findByText('企業一覧の画面')).toBeInTheDocument()
+  })
+
+  it('ゴミ箱内の企業は詳細から復元できる', async () => {
+    state.company = company({ deleted_at: '2026-10-13T00:00:00Z' })
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: '復元' }))
+    expect(state.rpcs).toEqual([{ name: 'restore_company', args: { p_company_id: 'c1' } }])
+    expect(screen.queryByRole('button', { name: 'ゴミ箱に入れる' })).toBeNull()
   })
 })

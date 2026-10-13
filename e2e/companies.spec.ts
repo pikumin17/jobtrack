@@ -10,7 +10,7 @@ test.describe('企業の登録と編集', () => {
   test('登録した企業を詳細で編集でき、別の利用者からは見えない', async ({ page, browser }, testInfo) => {
     const companyName = `${name} ${testInfo.project.name}`
     await page.goto('/companies')
-    await page.getByLabel('企業名').fill(companyName)
+    await page.getByLabel('企業名', { exact: true }).fill(companyName)
     await page.getByRole('button', { name: '追加' }).click()
     const row = page.getByRole('link', { name: new RegExp(companyName) })
     await expect(row).toContainText('未応募')
@@ -44,7 +44,7 @@ test.describe('企業の登録と編集', () => {
 
     await page.reload()
     await expect(page.getByText('応募済み 10/1(木)')).toBeVisible()
-    await expect(page.getByText('4 本命候補')).toBeVisible()
+    await expect(page.getByText('4 本命候補', { exact: true })).toBeVisible()
     await expect(page.getByText('企画職')).toBeVisible()
     await expect(page.getByRole('link', { name: 'https://example.com/recruit' })).toBeVisible()
 

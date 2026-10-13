@@ -27,7 +27,7 @@ type Props = {
 
 // ステップの詳細編集。任意の状態と日付・メモを直接編集できる（設計書 02 §3.5.2）
 export function StepEditSheet({ step, initialStatus, onClose }: Props) {
-  const update = useUpdateStep(step.company_id)
+  const update = useUpdateStep()
   const [values, setValues] = useState<StepFormInput>(() => ({
     ...stepFormInput(step),
     ...(initialStatus ? { status: initialStatus } : {}),

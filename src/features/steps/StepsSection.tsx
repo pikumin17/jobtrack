@@ -40,9 +40,9 @@ export function StepsSection({ companyId, steps, isError, readOnly, warnings = [
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<{ step: SelectionStep; initialStatus?: StepStatus } | null>(null)
   const [deleting, setDeleting] = useState<SelectionStep | null>(null)
-  const update = useUpdateStep(companyId)
+  const update = useUpdateStep()
   const reorder = useReorderSteps(companyId)
-  const remove = useDeleteStep(companyId)
+  const remove = useDeleteStep()
 
   const move = (index: number, delta: -1 | 1) => {
     if (!steps) return
