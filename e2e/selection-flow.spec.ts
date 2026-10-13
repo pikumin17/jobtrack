@@ -6,7 +6,7 @@ test.use({ storageState: USERS.a.state })
 
 async function addCompany(page: Page, name: string) {
   await page.goto('/companies')
-  await page.getByLabel('企業名').fill(name)
+  await page.getByLabel('企業名', { exact: true }).fill(name)
   await page.getByRole('button', { name: '追加' }).click()
   await page.getByRole('link', { name: new RegExp(name) }).click()
   await expect(page.getByRole('heading', { name })).toBeVisible()
