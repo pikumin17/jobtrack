@@ -22,6 +22,7 @@ export function StatusBadge({
   const { label, tone } = companyBadge(selectionStatus, applicationStatus)
   return (
     <span
+      data-testid="status-badge"
       className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${TONES[tone]}`}
     >
       {label}
