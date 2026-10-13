@@ -56,5 +56,8 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: 2.120.0
+      # 検証用ユーザーにパスワードでログインさせるため、この CI の中だけメールのログインを有効にする（本番の設定とは無関係）。
+      # 招待判定フックは有効のまま（未招待のメールではユーザーを作れない）。
+      - run: sed -i '/^\[auth.email\]/,/^\[/ s/^enable_signup = false/enable_signup = true/' supabase/config.toml
       - run: supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta
       - run: scripts/supabase-e2e/account-deletion.sh
