@@ -57,7 +57,11 @@ export function CompaniesPage() {
             {inputError}
           </p>
         )}
-        {add.isError && <div className="mt-3"><ErrorMessage message="保存できませんでした。もう一度お試しください。" /></div>}
+        {add.isError && (
+          <div className="mt-3">
+            <ErrorMessage message="保存できませんでした。もう一度お試しください。" />
+          </div>
+        )}
       </form>
 
       {companies.isPending ? (

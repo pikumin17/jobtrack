@@ -8,7 +8,8 @@ export function NotInvitedPage() {
         <Logo className="mx-auto size-12" />
         <h1 className="mt-4 text-xl font-bold">このアカウントは招待されていません</h1>
         <p className="mt-3 text-sm text-muted">
-          JobTrack は招待制です。招待されたGoogleアカウントでログインしてください。招待が取り消された場合も、この画面が表示されます。
+          JobTrack
+          は招待制です。招待されたGoogleアカウントでログインしてください。招待が取り消された場合も、この画面が表示されます。
         </p>
         <Link to="/login" className="mt-6 inline-flex min-h-11 items-center font-semibold text-sage-700 underline">
           ログイン画面に戻る

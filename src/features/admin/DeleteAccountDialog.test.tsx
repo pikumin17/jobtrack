@@ -74,7 +74,9 @@ describe('DeleteAccountDialog', () => {
   })
 
   it('認証記録を削除できなかった場合は、完了画面でそのことを知らせる', async () => {
-    const { user } = setup({ onConfirm: vi.fn(async () => ({ auth_user_deleted: true, auth_log_entries_deleted: null })) })
+    const { user } = setup({
+      onConfirm: vi.fn(async () => ({ auth_user_deleted: true, auth_log_entries_deleted: null })),
+    })
     await user.click(screen.getByRole('button', { name: '次へ' }))
     await user.type(screen.getByLabelText('削除するアカウントのメールアドレス'), 't@example.com')
     await user.click(screen.getByRole('button', { name: '完全に削除する' }))

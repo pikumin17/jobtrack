@@ -50,7 +50,11 @@ check('X-Content-Type-Options: nosniff', top.headers.get('x-content-type-options
 check('HSTS が付いている', (top.headers.get('strict-transport-security') ?? '').includes('max-age='))
 
 const assetPaths = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+\.(?:js|css))"/g)].map((m) => m[1])
-check('JavaScript のファイルが見つかる', assetPaths.some((p) => p.endsWith('.js')), `${assetPaths.length}件`)
+check(
+  'JavaScript のファイルが見つかる',
+  assetPaths.some((p) => p.endsWith('.js')),
+  `${assetPaths.length}件`,
+)
 const leaks = []
 for (const path of assetPaths) {
   const body = await (await fetch(`${appUrl}${path}`)).text()
@@ -75,7 +79,11 @@ if (supabaseUrl && publishableKey) {
     ['admin_invite', { p_email: 'smoke-check@example.invalid' }],
     ['hook_before_user_created', { event: { user: { email: 'smoke-check@example.invalid' } } }],
   ]) {
-    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${fn}`, { method: 'POST', headers, body: JSON.stringify(payload) })
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/${fn}`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    })
     check(`未ログインで ${fn} を呼べない`, !res.ok, `HTTP ${res.status}`)
   }
 

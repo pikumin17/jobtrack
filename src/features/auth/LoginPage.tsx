@@ -10,7 +10,9 @@ export function LoginPage() {
   const { session, loading } = useAuth()
   const [params] = useSearchParams()
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(params.get('error') ? 'ログインできませんでした。もう一度お試しください。' : null)
+  const [error, setError] = useState<string | null>(
+    params.get('error') ? 'ログインできませんでした。もう一度お試しください。' : null,
+  )
 
   if (!loading && session) return <Navigate to="/" replace />
 

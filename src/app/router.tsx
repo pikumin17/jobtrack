@@ -27,7 +27,14 @@ export const routes: RouteObject[] = [
       { path: 'calendar', element: <PlaceholderPage title="カレンダー" phase={3} /> },
       { path: 'analytics', element: <PlaceholderPage title="分析" phase={4} /> },
       { path: 'more', element: <MorePage /> },
-      { path: 'more/admin', element: <RequireAdmin><AdminPage /></RequireAdmin> },
+      {
+        path: 'more/admin',
+        element: (
+          <RequireAdmin>
+            <AdminPage />
+          </RequireAdmin>
+        ),
+      },
     ],
   },
   { path: '*', element: <NotFoundPage /> },
