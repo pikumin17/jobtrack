@@ -1,0 +1,59 @@
+# 画面の E2E テスト（Playwright）。CI の中で起動するローカルの Supabase だけを使い、本番には一切接続しない（設計書 04 フェーズ2、N-7）。
+name: E2E
+
+on:
+  pull_request:
+    paths:
+      [
+        'src/**',
+        'supabase/**',
+        'e2e/**',
+        'index.html',
+        'vite.config.ts',
+        'playwright.config.ts',
+        'package.json',
+        'package-lock.json',
+        '.github/workflows/e2e.yml',
+      ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      # テスト用ユーザーにパスワードでログインさせるため、この CI の中だけメールのログインを有効にする。
+      # 本番の Supabase の認証設定（Google のみ）とは無関係で、アプリ本体にもメールログインの画面はない。招待判定フックは有効のまま
+      - run: sed -i '/^\[auth.email\]/,/^\[/ s/^enable_signup = false/enable_signup = true/' supabase/config.toml
+      - run: supabase start -x studio,imgproxy,realtime,storage-api,edge-runtime,logflare,vector,supavisor,postgres-meta
+      # ローカル専用のキー（Supabase CLI が起動ごとに使う値。本番の秘密情報ではない）を後の手順に渡す
+      - name: ローカル Supabase の接続情報
+        run: |
+          supabase status -o env | grep -E '^(API_URL|DB_URL|ANON_KEY|SERVICE_ROLE_KEY)=' | sed 's/"//g; s/^/E2E_/' > /tmp/e2e.env
+          grep '_KEY=' /tmp/e2e.env | while IFS='=' read -r _ v; do echo "::add-mask::$v"; done
+          cat /tmp/e2e.env >> "$GITHUB_ENV"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7
