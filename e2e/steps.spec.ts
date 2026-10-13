@@ -24,6 +24,7 @@ test('よくある流れを追加して進め、結果を記録する', async ({
   const es = page.getByRole('listitem', { name: 'ES', exact: true })
   await es.getByRole('button', { name: '提出した／受けた' }).click()
   await expect(es.getByText('結果待ち')).toBeVisible()
+  await expect(page.getByRole('region', { name: '結果待ち' })).toContainText('ES（0日経過）')
   await expect(page.getByTestId('status-badge').getByText('選考中')).toBeVisible()
   await es.getByRole('button', { name: '通過' }).click()
   await expect(es.getByText('通過', { exact: true })).toBeVisible()

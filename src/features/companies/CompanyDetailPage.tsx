@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import { Link, useParams } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -9,6 +9,8 @@ import type { Company } from '@/lib/database.types'
 import { userFacingMessage } from '@/lib/errors'
 import { formatJstShort } from '@/lib/dates'
 import { APPLICATION_TYPE_LABELS, CHANNEL_LABELS, CLOSED_REASON_LABELS, FINAL_OUTCOME_LABELS } from '@/lib/labels'
+import { summarizeCompany } from '@/lib/companySummary'
+import { dismissWarning, inputWarnings, loadDismissed } from '@/lib/inputWarnings'
 import { judgeSelectionStatus } from '@/lib/status'
 import { useSteps } from '@/features/steps/api'
 import { OutcomeSheet } from '@/features/steps/OutcomeSheet'
@@ -19,6 +21,7 @@ import { CompanyForm } from './CompanyForm'
 import { PreferenceStars } from './PreferenceStars'
 import { isSafeHttpUrl } from './schema'
 import { StatusBadge } from './StatusBadge'
+import { SummaryBlocks } from './SummaryBlocks'
 
 // 企業詳細（設計書 02 §2.4）。結果待ち・次回予定・履歴の欄は後続の PR で加える
 export function CompanyDetailPage() {
@@ -54,9 +57,25 @@ function CompanyDetail({ company }: { company: Company }) {
   // ゴミ箱内の企業は読み取りだけ（DB でも拒否される。設計書 02 §3.9）
   const readOnly = company.deleted_at !== null
   // バッジは DB が保存した選考状態と同じ判定表で、読み込んだステップから求める（ステップを変えた直後もずれない。02 §3.5.3）
-  const selectionStatus = steps.data
-    ? judgeSelectionStatus(company.final_outcome, steps.data).status
-    : company.selection_status
+  const judged = steps.data
+    ? judgeSelectionStatus(company.final_outcome, steps.data)
+    : { status: company.selection_status, reason: company.selection_status_reason }
+  const selectionStatus = judged.status
+  const [dismissed, setDismissed] = useState(loadDismissed)
+  // 結果待ち・次回予定・注意と入力警告は表示のたびに求める（保存しない。02 §3.5.5, §3.6）
+  const summary = useMemo(
+    () =>
+      summarizeCompany(
+        { ...company, selection_status: judged.status, selection_status_reason: judged.reason },
+        steps.data ?? [],
+      ),
+    [company, judged.status, judged.reason, steps.data],
+  )
+  const warnings = useMemo(
+    () => inputWarnings(company, steps.data ?? []).filter((w) => !dismissed.has(w.fingerprint)),
+    [company, steps.data, dismissed],
+  )
+  const keepAsIs = readOnly ? undefined : (fingerprint: string) => setDismissed(dismissWarning(fingerprint))
 
   return (
     <div className="space-y-4">
@@ -82,7 +101,14 @@ function CompanyDetail({ company }: { company: Company }) {
         )}
       </header>
 
-      <ApplicationStatusSection company={company} readOnly={readOnly} />
+      <SummaryBlocks summary={summary} warnings={warnings} />
+
+      <ApplicationStatusSection
+        company={company}
+        readOnly={readOnly}
+        warnings={warnings.filter((w) => w.stepId === null)}
+        onKeepAsIs={keepAsIs}
+      />
 
       <section aria-labelledby="outcome-heading" className="rounded-2xl border border-line bg-surface p-4">
         <h2 id="outcome-heading" className="text-sm font-semibold text-muted">
@@ -116,7 +142,14 @@ function CompanyDetail({ company }: { company: Company }) {
         </div>
       </section>
 
-      <StepsSection companyId={company.id} steps={steps.data} isError={steps.isError} readOnly={readOnly} />
+      <StepsSection
+        companyId={company.id}
+        steps={steps.data}
+        isError={steps.isError}
+        readOnly={readOnly}
+        warnings={warnings}
+        onKeepAsIs={keepAsIs}
+      />
 
       <section aria-labelledby="info-heading" className="rounded-2xl border border-line bg-surface p-4">
         <div className="flex items-center justify-between gap-3">

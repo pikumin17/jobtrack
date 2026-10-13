@@ -7,11 +7,23 @@ import { formatJstShort, todayJst } from '@/lib/dates'
 import { userFacingMessage } from '@/lib/errors'
 import { useSetApplication } from './api'
 import { appliedOnSchema } from './schema'
+import { WarningNote } from './WarningNote'
+import type { InputWarning } from '@/lib/inputWarnings'
 
 type Mode = null | 'apply' | 'change-date' | 'unapply'
 
 // 応募状態欄（設計書 02 §2.4 企業詳細画面、§3.5.1）。ステップとは独立に、利用者の操作だけで変わる
-export function ApplicationStatusSection({ company, readOnly }: { company: Company; readOnly: boolean }) {
+export function ApplicationStatusSection({
+  company,
+  readOnly,
+  warnings = [],
+  onKeepAsIs,
+}: {
+  company: Company
+  readOnly: boolean
+  warnings?: InputWarning[]
+  onKeepAsIs?: (fingerprint: string) => void
+}) {
   const setApplication = useSetApplication(company.id)
   const [mode, setMode] = useState<Mode>(null)
   const [date, setDate] = useState('')
@@ -44,7 +56,11 @@ export function ApplicationStatusSection({ company, readOnly }: { company: Compa
   const applied = company.application_status === 'applied' && company.applied_on
 
   return (
-    <section aria-labelledby="application-heading" className="rounded-2xl border border-line bg-surface p-4">
+    <section
+      id="application"
+      aria-labelledby="application-heading"
+      className="rounded-2xl border border-line bg-surface p-4"
+    >
       <h2 id="application-heading" className="text-sm font-semibold text-muted">
         応募状態
       </h2>
@@ -69,6 +85,9 @@ export function ApplicationStatusSection({ company, readOnly }: { company: Compa
           </div>
         )}
       </div>
+      {warnings.map((w) => (
+        <WarningNote key={w.fingerprint} warning={w} onKeepAsIs={onKeepAsIs} />
+      ))}
 
       {(mode === 'apply' || mode === 'change-date') && (
         <Sheet

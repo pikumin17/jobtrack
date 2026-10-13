@@ -12,8 +12,17 @@ import { AddStepSheet } from './AddStepSheet'
 import { moveStep, useDeleteStep, useReorderSteps, useUpdateStep } from './api'
 import { QUICK_ACTION_LABELS, quickActionsFor, quickActionUpdate } from './schema'
 import { StepEditSheet } from './StepEditSheet'
+import { WarningNote } from '@/features/companies/WarningNote'
+import type { InputWarning } from '@/lib/inputWarnings'
 
-type Props = { companyId: string; steps: SelectionStep[] | undefined; isError: boolean; readOnly: boolean }
+type Props = {
+  companyId: string
+  steps: SelectionStep[] | undefined
+  isError: boolean
+  readOnly: boolean
+  warnings?: InputWarning[]
+  onKeepAsIs?: (fingerprint: string) => void
+}
 
 const STATUS_TONE: Record<StepStatus, string> = {
   not_started: 'border border-line bg-cream text-muted',
@@ -27,7 +36,7 @@ const STATUS_TONE: Record<StepStatus, string> = {
 }
 
 // 選考ステップの一覧（設計書 02 §2.4 企業詳細画面、§3.5.2）
-export function StepsSection({ companyId, steps, isError, readOnly }: Props) {
+export function StepsSection({ companyId, steps, isError, readOnly, warnings = [], onKeepAsIs }: Props) {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<{ step: SelectionStep; initialStatus?: StepStatus } | null>(null)
   const [deleting, setDeleting] = useState<SelectionStep | null>(null)
@@ -74,7 +83,12 @@ export function StepsSection({ companyId, steps, isError, readOnly }: Props) {
         ) : (
           <ol className="space-y-3">
             {steps.map((step, index) => (
-              <li key={step.id} className="rounded-2xl border border-line p-3" aria-label={step.label}>
+              <li
+                key={step.id}
+                id={`step-${step.id}`}
+                className="scroll-mt-4 rounded-2xl border border-line p-3"
+                aria-label={step.label}
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="font-semibold break-all">
@@ -89,6 +103,11 @@ export function StepsSection({ companyId, steps, isError, readOnly }: Props) {
                     {STEP_STATUS_LABELS[step.status]}
                   </span>
                 </div>
+                {warnings
+                  .filter((w) => w.stepId === step.id)
+                  .map((w) => (
+                    <WarningNote key={w.fingerprint} warning={w} onKeepAsIs={onKeepAsIs} />
+                  ))}
                 {!readOnly && (
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {(step.status === 'not_started' || step.status === 'scheduled') && (
