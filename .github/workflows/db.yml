@@ -4,10 +4,26 @@ name: DB
 
 on:
   pull_request:
-    paths: ['supabase/**', 'scripts/local-db/**', 'scripts/supabase-e2e/**', '.github/workflows/db.yml']
+    paths:
+      [
+        'supabase/**',
+        'scripts/local-db/**',
+        'scripts/supabase-e2e/**',
+        'scripts/check-db-types.mjs',
+        'src/lib/database.types.ts',
+        '.github/workflows/db.yml',
+      ]
   push:
     branches: [main]
-    paths: ['supabase/**', 'scripts/local-db/**', 'scripts/supabase-e2e/**', '.github/workflows/db.yml']
+    paths:
+      [
+        'supabase/**',
+        'scripts/local-db/**',
+        'scripts/supabase-e2e/**',
+        'scripts/check-db-types.mjs',
+        'src/lib/database.types.ts',
+        '.github/workflows/db.yml',
+      ]
 
 permissions:
   contents: read
@@ -34,6 +50,16 @@ jobs:
         run: scripts/local-db/run.sh
         env:
           PGDATABASE: postgres
+      # 手書きの型定義（src/lib/database.types.ts）が DB と一致しているか（N-9）。run.sh が作った検査用 DB を読む
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 型定義と DB の一致
+        run: node scripts/check-db-types.mjs
+        env:
+          DATABASE_URL: postgresql:///jobtrack_test
 
   # Supabase CLI のローカル DB（本物と同じイメージ）で検査する
   supabase:
