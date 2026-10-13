@@ -5,6 +5,7 @@ import { RequireAdmin, RequireMember } from '@/features/auth/guards'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { NotInvitedPage } from '@/features/auth/NotInvitedPage'
 import { CompaniesPage } from '@/features/companies/CompaniesPage'
+import { CompanyDetailPage } from '@/features/companies/CompanyDetailPage'
 import { HomePage } from '@/features/placeholders/HomePage'
 import { MorePage } from '@/features/placeholders/MorePage'
 import { NotFoundPage } from '@/features/placeholders/NotFoundPage'
@@ -24,6 +25,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <HomePage /> },
       { path: 'companies', element: <CompaniesPage /> },
+      { path: 'companies/:id', element: <CompanyDetailPage /> },
       { path: 'calendar', element: <PlaceholderPage title="カレンダー" phase={3} /> },
       { path: 'analytics', element: <PlaceholderPage title="分析" phase={4} /> },
       { path: 'more', element: <MorePage /> },

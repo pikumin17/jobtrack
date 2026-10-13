@@ -1,13 +1,18 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorMessage } from '@/components/ui/ErrorMessage'
 import { LoadingScreen } from '@/components/ui/LoadingScreen'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { formatJstDate } from '@/lib/dates'
+import { userFacingMessage } from '@/lib/errors'
 import { companyNameSchema, useAddCompany, useCompanies } from './api'
+import { PreferenceDisplay } from './PreferenceStars'
+import { StatusBadge } from './StatusBadge'
 
-// フェーズ1の最小画面：企業名だけで登録・一覧表示（データ分離の確認用）。本格的な画面はフェーズ2。
+// 企業一覧。企業名だけで登録でき、任意項目は詳細画面で後から入力する。
+// 検索・絞込・並替と、次回予定などを出す一覧は後続の PR（設計書 02 §2.4）
 export function CompaniesPage() {
   const companies = useCompanies()
   const add = useAddCompany()
@@ -59,7 +64,7 @@ export function CompaniesPage() {
         )}
         {add.isError && (
           <div className="mt-3">
-            <ErrorMessage message="保存できませんでした。もう一度お試しください。" />
+            <ErrorMessage message={userFacingMessage(add.error, '保存できませんでした。もう一度お試しください。')} />
           </div>
         )}
       </form>
@@ -73,9 +78,20 @@ export function CompaniesPage() {
       ) : (
         <ul className="divide-y divide-line rounded-2xl border border-line bg-surface">
           {companies.data.map((c) => (
-            <li key={c.id} className="flex items-center justify-between gap-3 px-4 py-3">
-              <span className="font-semibold break-all">{c.name}</span>
-              <span className="shrink-0 text-xs text-muted">{formatJstDate(c.created_at)} 登録</span>
+            <li key={c.id}>
+              <Link
+                to={`/companies/${c.id}`}
+                className="flex flex-col gap-1 px-4 py-3 hover:bg-sage-100 focus-visible:bg-sage-100"
+              >
+                <span className="flex items-start justify-between gap-3">
+                  <span className="font-semibold break-all">{c.name}</span>
+                  <StatusBadge selectionStatus={c.selection_status} applicationStatus={c.application_status} />
+                </span>
+                <span className="flex items-center justify-between gap-3">
+                  <PreferenceDisplay preference={c.preference} />
+                  <span className="shrink-0 text-xs text-muted">{formatJstDate(c.created_at)} 登録</span>
+                </span>
+              </Link>
             </li>
           ))}
         </ul>

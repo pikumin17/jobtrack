@@ -3,10 +3,13 @@ import {
   endOfJstDay,
   formatJstDate,
   formatJstDateTime,
+  formatJstShort,
+  fromJstDateTimeInput,
   isDateOnly,
   startOfJstDay,
   toJstDate,
   todayJst,
+  toJstDateTimeInput,
 } from './dates'
 
 // 端末のタイムゾーンに関係なく JST で計算されることを確認する（テスト 1-09）。
@@ -62,5 +65,23 @@ describe('isDateOnly', () => {
   })
   it('不正な日付は例外', () => {
     expect(() => startOfJstDay('2026-02-30')).toThrow()
+  })
+})
+
+describe('短い表示と入力欄（JST）', () => {
+  it('短い表示は端末のタイムゾーンに関係なく JST', () => {
+    expect(formatJstShort('2026-10-15T05:00:00Z')).toBe('10/15(木)')
+    expect(formatJstShort('2026-10-14T15:30:00Z', true)).toBe('10/15(木) 00:30')
+    expect(formatJstShort('2026-10-15')).toBe('10/15(木)')
+  })
+  it('入力欄の値と保存値を JST で相互に変換する', () => {
+    expect(toJstDateTimeInput('2026-10-14T15:30:00Z')).toBe('2026-10-15T00:30')
+    expect(fromJstDateTimeInput('2026-10-15T00:30')).toBe('2026-10-14T15:30:00.000Z')
+    expect(fromJstDateTimeInput('2026-12-31T23:59')).toBe('2026-12-31T14:59:00.000Z')
+  })
+  it('入力欄の値の形式が違えば null', () => {
+    expect(fromJstDateTimeInput('')).toBeNull()
+    expect(fromJstDateTimeInput('2026-02-30T10:00')).toBeNull()
+    expect(fromJstDateTimeInput('2026-10-15T24:00')).toBeNull()
   })
 })
