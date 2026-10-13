@@ -97,6 +97,15 @@ echo "残ったアクセストークンでの企業一覧: $r"
 [ "$(status_of "$r")" -ge 400 ] || [ "$(body_of "$r")" = '[]' ] || fail "残ったアクセストークンでデータが読めた"
 ok "残ったアクセストークンでは何も読めない"
 r=$(call GET /auth/v1/user "$TT"); echo "残ったアクセストークンでのユーザー取得: $(status_of "$r")"
+# 利用者が自分で登録し直す経路（ブラウザから届く経路）は、招待判定フックが拒否する
+r=$(call POST /auth/v1/signup "$ANON_KEY" "{\"email\":\"$T\",\"password\":\"$PASS\"}")
+[ "$(status_of "$r")" -ge 400 ] && ok "同じメールで登録し直そうとしても招待判定フックが拒否する ($(status_of "$r"))" || fail "登録し直せた: $r"
+n=$("${PSQL[@]}" -c "select count(*) from auth.users where email = '$T'"); [ "$n" = 0 ] || fail "登録し直しでユーザーが作られた"
+# 管理用の秘密キーでの作成（ブラウザからは使えない経路）はフックを通らない。作られても招待がないので停止状態になる
 r=$(call POST /auth/v1/admin/users "$SERVICE_ROLE_KEY" "{\"email\":\"$T\",\"password\":\"$PASS\",\"email_confirm\":true}")
-[ "$(status_of "$r")" -ge 400 ] && ok "同じメールで作り直そうとしても招待判定フックが拒否する ($(status_of "$r"))" || fail "作り直せた: $r"
+echo "参考: 管理用キーでの作成: $(status_of "$r")"
+if [ "$(status_of "$r")" = 200 ]; then
+  st=$("${PSQL[@]}" -c "select status from public.profiles where email = '$T'")
+  [ "$st" = suspended ] && ok "管理用キーで作り直しても、招待がないので停止状態（データは使えない）" || fail "作り直したユーザーが停止状態でない: $st"
+fi
 echo "すべて成功"
