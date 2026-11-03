@@ -133,12 +133,49 @@ export function useDeleteTask() {
   })
 }
 
-// 完了・未完了の切替（予定は「参加済み」）。完了日時は今
+type ToggleInput = { table: 'events' | 'tasks'; id: string; done: boolean }
+type PlansData = { events: JobEvent[]; tasks: Task[] }
+
+// 完了・未完了の切替（予定は「参加済み」）。完了日時は今。
+// チェックはすぐに表示へ反映し（楽観的更新、02 D4）、保存に失敗したら元に戻す
 export function useToggleDone() {
-  return usePlanMutation(async ({ table, id, done }: { table: 'events' | 'tasks'; id: string; done: boolean }) => {
-    const completed_at = done ? new Date().toISOString() : null
-    const { data, error } = await supabase.from(table).update({ completed_at }).eq('id', id).select('id')
-    if (error) throw error
-    if (data.length === 0) throw notFound
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ table, id, done }: ToggleInput) => {
+      const completed_at = done ? new Date().toISOString() : null
+      const { data, error } = await supabase.from(table).update({ completed_at }).eq('id', id).select('id')
+      if (error) throw error
+      if (data.length === 0) throw notFound
+    },
+    onMutate: async ({ table, id, done }: ToggleInput) => {
+      const keys = [calendarKey, tasksKey, ['company-plans']]
+      await Promise.all(keys.map((queryKey) => queryClient.cancelQueries({ queryKey })))
+      const snapshot = keys.flatMap((queryKey) => queryClient.getQueriesData({ queryKey }))
+      const completed_at = done ? new Date().toISOString() : null
+      queryClient.setQueryData<CalendarEntry[]>(calendarKey, (old) =>
+        old?.map((e) => (e.source_table === table && e.source_id === id ? { ...e, done } : e)),
+      )
+      if (table === 'tasks')
+        queryClient.setQueryData<Task[]>(tasksKey, (old) => old?.map((t) => (t.id === id ? { ...t, completed_at } : t)))
+      queryClient.setQueriesData<PlansData>({ queryKey: ['company-plans'] }, (old) =>
+        old
+          ? {
+              events: old.events.map((e) => (table === 'events' && e.id === id ? { ...e, completed_at } : e)),
+              tasks: old.tasks.map((t) => (table === 'tasks' && t.id === id ? { ...t, completed_at } : t)),
+            }
+          : old,
+      )
+      return { snapshot }
+    },
+    onError: (error, _input, context) => {
+      for (const [queryKey, data] of context?.snapshot ?? []) queryClient.setQueryData(queryKey, data)
+      if (isPermissionError(error)) void queryClient.invalidateQueries({ queryKey: ['profile'] })
+    },
+    onSettled: () =>
+      Promise.all(
+        [calendarKey, tasksKey, eventsKey, ['company-plans'], ['timeline']].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      ),
   })
 }
