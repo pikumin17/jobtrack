@@ -35,7 +35,7 @@ concurrency:
 jobs:
   # 素の Postgres に Supabase の最小環境を再現して検査する（速い）
   postgres:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -63,7 +63,7 @@ jobs:
 
   # Supabase CLI のローカル DB（本物と同じイメージ）で検査する
   supabase:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -77,7 +77,7 @@ jobs:
 
   # 認証サービス・API込みの本物の Supabase で、アカウント完全削除を端から端まで確かめる（03 §8.1 S-22）
   supabase-auth:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
