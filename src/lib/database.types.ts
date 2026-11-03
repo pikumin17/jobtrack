@@ -51,6 +51,18 @@ export type TimelineAction =
   | 'trashed'
   | 'backup_restored'
 
+// 20261103000001
+export type EventKind = 'briefing' | 'internship' | 'ob_visit' | 'other'
+export type CalendarItemType =
+  | 'es_deadline'
+  | 'test_deadline'
+  | 'deadline'
+  | 'step_scheduled'
+  | 'result_expected'
+  | 'event'
+  | 'task'
+export type CalendarSourceTable = 'selection_steps' | 'events' | 'tasks'
+
 export type DeleteAccountResult = {
   auth_user_deleted: boolean
   auth_log_entries_deleted: number | null
@@ -189,6 +201,66 @@ export type Database = {
         Update: never
         Relationships: []
       }
+      // 20261103000001。企業との紐付けは任意。日時は時刻あり（starts_at）か終日（all_day_date）の一方
+      events: {
+        Row: {
+          id: string
+          user_id: string
+          company_id: string | null
+          kind: EventKind
+          title: string
+          starts_at: string | null
+          ends_at: string | null
+          all_day_date: string | null
+          place: string | null
+          url: string | null
+          memo: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          kind?: EventKind
+          title: string
+          starts_at?: string | null
+          ends_at?: string | null
+          all_day_date?: string | null
+          place?: string | null
+          url?: string | null
+          memo?: string | null
+          completed_at?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['events']['Insert']>
+        Relationships: []
+      }
+      // 20261103000001。期日は任意（終日か時刻ありの一方まで）。優先度 1=高
+      tasks: {
+        Row: {
+          id: string
+          user_id: string
+          company_id: string | null
+          title: string
+          due_date: string | null
+          due_at: string | null
+          priority: number
+          memo: string | null
+          completed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          company_id?: string | null
+          title: string
+          due_date?: string | null
+          due_at?: string | null
+          priority?: number
+          memo?: string | null
+          completed_at?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['tasks']['Insert']>
+        Relationships: []
+      }
       notification_settings: {
         Row: {
           user_id: string
@@ -213,7 +285,25 @@ export type Database = {
         Relationships: []
       }
     }
-    Views: { [_ in never]: never }
+    Views: {
+      // 20261103000001。元の表を束ねる読み取り専用のビュー（security_invoker で元の表の RLS が効く）
+      calendar_items: {
+        Row: {
+          source_table: CalendarSourceTable
+          source_id: string
+          company_id: string | null
+          company_name: string | null
+          item_type: CalendarItemType
+          title: string
+          starts_at: string | null
+          ends_at: string | null
+          all_day_date: string | null
+          done: boolean
+          priority: number | null
+        }
+        Relationships: []
+      }
+    }
     Functions: {
       admin_list_members: {
         Args: Record<PropertyKey, never>
@@ -267,5 +357,8 @@ export type Database = {
 export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Company = Database['public']['Tables']['companies']['Row']
 export type SelectionStep = Database['public']['Tables']['selection_steps']['Row']
+export type JobEvent = Database['public']['Tables']['events']['Row']
+export type Task = Database['public']['Tables']['tasks']['Row']
+export type CalendarItem = Database['public']['Views']['calendar_items']['Row']
 export type TimelineEntry = Database['public']['Tables']['timeline_entries']['Row']
 export type MemberRow = Database['public']['Functions']['admin_list_members']['Returns'][number]

@@ -4,6 +4,7 @@ import { AuthCallbackPage } from '@/features/auth/AuthCallbackPage'
 import { RequireAdmin, RequireMember } from '@/features/auth/guards'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { NotInvitedPage } from '@/features/auth/NotInvitedPage'
+import { CalendarPage } from '@/features/calendar/CalendarPage'
 import { CompaniesPage } from '@/features/companies/CompaniesPage'
 import { CompanyDetailPage } from '@/features/companies/CompanyDetailPage'
 import { HomePage } from '@/features/home/HomePage'
@@ -27,7 +28,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <HomePage /> },
       { path: 'companies', element: <CompaniesPage /> },
       { path: 'companies/:id', element: <CompanyDetailPage /> },
-      { path: 'calendar', element: <PlaceholderPage title="カレンダー" phase={3} /> },
+      { path: 'calendar', element: <CalendarPage /> },
       { path: 'analytics', element: <PlaceholderPage title="分析" phase={4} /> },
       { path: 'more', element: <MorePage /> },
       { path: 'more/trash', element: <TrashPage /> },

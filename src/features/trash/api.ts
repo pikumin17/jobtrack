@@ -30,7 +30,9 @@ function useTrashMutation(rpc: 'trash_company' | 'restore_company' | 'purge_comp
     },
     onSettled: () =>
       Promise.all(
-        [['companies'], ['steps'], ['timeline']].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+        [['companies'], ['steps'], ['timeline'], ['calendar'], ['tasks'], ['events'], ['company-plans']].map(
+          (queryKey) => queryClient.invalidateQueries({ queryKey }),
+        ),
       ),
     onError: (error) => {
       if (isPermissionError(error)) void queryClient.invalidateQueries({ queryKey: ['profile'] })

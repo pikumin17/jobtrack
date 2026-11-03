@@ -40,7 +40,7 @@ export function MorePage() {
             </Link>
           </li>
         )}
-        <li className="flex min-h-12 items-center px-4 text-muted">設定・通知・バックアップ（フェーズ3〜4で追加）</li>
+        <li className="flex min-h-12 items-center px-4 text-muted">メール通知・設定・バックアップ（今後追加）</li>
       </ul>
       <Button variant="secondary" className="mt-6 w-full" onClick={logout}>
         ログアウト
