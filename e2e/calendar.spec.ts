@@ -54,10 +54,13 @@ test('企業の詳細から予定とタスクを追加し、カレンダーと�
   await page.goto('/calendar')
   const day = page.getByRole('region', { name: /\d{4}\/\d{2}\/\d{2}/ })
   await expect(day.getByRole('listitem', { name: new RegExp(eventTitle) })).toContainText(companyName)
-  await day.getByRole('checkbox', { name: `${taskTitle}を完了にする` }).check()
-  await expect(day.getByRole('checkbox', { name: `${taskTitle}を未完了に戻す` })).toBeChecked()
+  // チェックの名前は状態によらず同じ。状態は「チェック済みかどうか」で伝える
+  const done = day.getByRole('checkbox', { name: `${taskTitle}（完了）` })
+  await expect(done).not.toBeChecked()
+  await done.click()
+  await expect(done).toBeChecked()
   await page.reload()
-  await expect(page.getByRole('checkbox', { name: `${taskTitle}を未完了に戻す` })).toBeChecked()
+  await expect(page.getByRole('checkbox', { name: `${taskTitle}（完了）` })).toBeChecked()
 
   // 完了したタスクはホームの要対応・優先タスクから消える
   await page.goto('/')

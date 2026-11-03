@@ -84,7 +84,7 @@ export function EntryList({
               {isPlan && (
                 <input
                   type="checkbox"
-                  aria-label={`${entry.title}を${entry.done ? '未完了に戻す' : '完了にする'}`}
+                  aria-label={`${entry.title}（完了）`}
                   checked={entry.done}
                   disabled={readOnly || toggle.isPending}
                   onChange={(e) =>
