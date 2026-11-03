@@ -14,6 +14,7 @@ import { dismissWarning, inputWarnings, loadDismissed } from '@/lib/inputWarning
 import { judgeSelectionStatus } from '@/lib/status'
 import { useSteps } from '@/features/steps/api'
 import { OutcomeSheet } from '@/features/steps/OutcomeSheet'
+import { CompanyPlansSection } from '@/features/calendar/CompanyPlansSection'
 import { StepsSection } from '@/features/steps/StepsSection'
 import { TimelineSection } from '@/features/timeline/TimelineSection'
 import { useRestoreCompany, useTrashCompany } from '@/features/trash/api'
@@ -165,6 +166,8 @@ function CompanyDetail({ company }: { company: Company }) {
         warnings={warnings}
         onKeepAsIs={keepAsIs}
       />
+
+      <CompanyPlansSection companyId={company.id} companyName={company.name} readOnly={readOnly} />
 
       <section aria-labelledby="info-heading" className="rounded-2xl border border-line bg-surface p-4">
         <div className="flex items-center justify-between gap-3">

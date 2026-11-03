@@ -87,6 +87,71 @@ export function fromJstDateTimeInput(value: string): string | null {
   return new Date(startOfJstDay(m[1]!).getTime() + (hours * 60 + minutes) * 60 * 1000).toISOString()
 }
 
+// ---------------------------------------------------------------- 暦日（'YYYY-MM-DD'）の計算（カレンダー用）
+// 暦日は時刻を持たないので、UTC の 0:00 として足し引きする（端末のタイムゾーンに左右されない）
+
+function dateOnlyToUtc(day: DateOnly): number {
+  assertDateOnly(day)
+  const [y, m, d] = day.split('-').map(Number) as [number, number, number]
+  return Date.UTC(y, m - 1, d)
+}
+
+function utcToDateOnly(ms: number): DateOnly {
+  return new Date(ms).toISOString().slice(0, 10)
+}
+
+/** 暦日に n 日足す（負なら引く） */
+export function addDaysToDate(day: DateOnly, n: number): DateOnly {
+  return utcToDateOnly(dateOnlyToUtc(day) + n * 24 * 60 * 60 * 1000)
+}
+
+/** 曜日（0=日 … 6=土） */
+export function weekdayOf(day: DateOnly): number {
+  return new Date(dateOnlyToUtc(day)).getUTCDay()
+}
+
+/** 'YYYY-MM'（月） */
+export type MonthKey = string
+
+export function monthOf(day: DateOnly): MonthKey {
+  return day.slice(0, 7)
+}
+
+/** 月に n か月足す */
+export function addMonths(month: MonthKey, n: number): MonthKey {
+  const [y, m] = month.split('-').map(Number) as [number, number]
+  const index = y * 12 + (m - 1) + n
+  return `${String(Math.floor(index / 12)).padStart(4, '0')}-${String((index % 12) + 1).padStart(2, '0')}`
+}
+
+/** 月の表示用: 2026年11月 */
+export function formatMonth(month: MonthKey): string {
+  const [y, m] = month.split('-').map(Number) as [number, number]
+  return `${y}年${m}月`
+}
+
+/** 月の表（日曜始まりの週ごと）。前後の月の日も含めて 7 日 × 4〜6 週 */
+export function monthWeeks(month: MonthKey): DateOnly[][] {
+  const first = `${month}-01`
+  const start = addDaysToDate(first, -weekdayOf(first))
+  const nextFirst = `${addMonths(month, 1)}-01`
+  const weeks: DateOnly[][] = []
+  for (let day = start; day < nextFirst; ) {
+    const week: DateOnly[] = []
+    for (let i = 0; i < 7; i++) {
+      week.push(day)
+      day = addDaysToDate(day, 1)
+    }
+    weeks.push(week)
+  }
+  return weeks
+}
+
+/** 時刻だけ（JST）: 14:30 */
+export function formatJstTime(value: Date | string): string {
+  return format(toInstant(value), 'HH:mm', { in: inTokyo })
+}
+
 // ISO 曜日（1=月 … 7=日）を % 7 して引く
 const WEEKDAYS_JA = ['日', '月', '火', '水', '木', '金', '土'] as const
 

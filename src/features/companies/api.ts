@@ -104,6 +104,8 @@ function useUpdateCompany<T>(id: string, toUpdate: (input: T) => CompanyUpdate) 
       Promise.all([
         queryClient.invalidateQueries({ queryKey: companiesKey }),
         queryClient.invalidateQueries({ queryKey: ['timeline'] }),
+        // カレンダーには企業名が出る
+        queryClient.invalidateQueries({ queryKey: ['calendar'] }),
       ]),
     onError: onMutationError(queryClient),
   })

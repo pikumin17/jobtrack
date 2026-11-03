@@ -65,6 +65,8 @@ function useStepMutation<T>(run: (input: T) => Promise<void>) {
         queryClient.invalidateQueries({ queryKey: ['steps'] }),
         queryClient.invalidateQueries({ queryKey: companiesKey }),
         queryClient.invalidateQueries({ queryKey: ['timeline'] }),
+        // カレンダーはステップの締切・実施日時・結果通知予定も表示する（20261103000001）
+        queryClient.invalidateQueries({ queryKey: ['calendar'] }),
       ]),
     onError: (error) => {
       if (isPermissionError(error)) void queryClient.invalidateQueries({ queryKey: ['profile'] })
