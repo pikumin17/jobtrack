@@ -1,7 +1,8 @@
 import { createBrowserRouter, type RouteObject } from 'react-router'
 import { AdminPage } from '@/features/admin/AdminPage'
+import { AnalyticsPage } from '@/features/analytics/AnalyticsPage'
 import { AuthCallbackPage } from '@/features/auth/AuthCallbackPage'
-import { RequireAdmin, RequireMember } from '@/features/auth/guards'
+import { RequireAdmin, RequireMember, RequireOnboarded } from '@/features/auth/guards'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { NotInvitedPage } from '@/features/auth/NotInvitedPage'
 import { CalendarPage } from '@/features/calendar/CalendarPage'
@@ -10,7 +11,8 @@ import { CompanyDetailPage } from '@/features/companies/CompanyDetailPage'
 import { HomePage } from '@/features/home/HomePage'
 import { MorePage } from '@/features/placeholders/MorePage'
 import { NotFoundPage } from '@/features/placeholders/NotFoundPage'
-import { PlaceholderPage } from '@/features/placeholders/PlaceholderPage'
+import { DataPage } from '@/features/settings/DataPage'
+import { OnboardingPage, ProfilePage } from '@/features/settings/ProfilePages'
 import { TrashPage } from '@/features/trash/TrashPage'
 import { AppShell } from './AppShell'
 
@@ -19,9 +21,19 @@ export const routes: RouteObject[] = [
   { path: '/auth/callback', element: <AuthCallbackPage /> },
   { path: '/not-invited', element: <NotInvitedPage /> },
   {
+    path: '/onboarding',
     element: (
       <RequireMember>
-        <AppShell />
+        <OnboardingPage />
+      </RequireMember>
+    ),
+  },
+  {
+    element: (
+      <RequireMember>
+        <RequireOnboarded>
+          <AppShell />
+        </RequireOnboarded>
       </RequireMember>
     ),
     children: [
@@ -29,9 +41,11 @@ export const routes: RouteObject[] = [
       { path: 'companies', element: <CompaniesPage /> },
       { path: 'companies/:id', element: <CompanyDetailPage /> },
       { path: 'calendar', element: <CalendarPage /> },
-      { path: 'analytics', element: <PlaceholderPage title="分析" phase={4} /> },
+      { path: 'analytics', element: <AnalyticsPage /> },
       { path: 'more', element: <MorePage /> },
       { path: 'more/trash', element: <TrashPage /> },
+      { path: 'more/profile', element: <ProfilePage /> },
+      { path: 'more/data', element: <DataPage /> },
       {
         path: 'more/admin',
         element: (

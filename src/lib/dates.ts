@@ -147,6 +147,11 @@ export function monthWeeks(month: MonthKey): DateOnly[][] {
   return weeks
 }
 
+/** ファイル名用の日時（JST）: 2026-11-03-2130 */
+export function fileStampJst(now: Date = new Date()): string {
+  return format(now, 'yyyy-MM-dd-HHmm', { in: inTokyo })
+}
+
 /** 時刻だけ（JST）: 14:30 */
 export function formatJstTime(value: Date | string): string {
   return format(toInstant(value), 'HH:mm', { in: inTokyo })

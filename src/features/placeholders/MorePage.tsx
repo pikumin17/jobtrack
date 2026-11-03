@@ -29,6 +29,16 @@ export function MorePage() {
       </section>
       <ul className="mt-4 divide-y divide-line rounded-2xl border border-line bg-surface">
         <li>
+          <Link to="/more/profile" className="flex min-h-12 items-center px-4 font-semibold">
+            プロフィール
+          </Link>
+        </li>
+        <li>
+          <Link to="/more/data" className="flex min-h-12 items-center px-4 font-semibold">
+            データの書き出し・復元
+          </Link>
+        </li>
+        <li>
           <Link to="/more/trash" className="flex min-h-12 items-center px-4 font-semibold">
             ゴミ箱
           </Link>
@@ -40,7 +50,7 @@ export function MorePage() {
             </Link>
           </li>
         )}
-        <li className="flex min-h-12 items-center px-4 text-muted">メール通知・設定・バックアップ（今後追加）</li>
+        <li className="flex min-h-12 items-center px-4 text-muted">メール通知（今後追加）</li>
       </ul>
       <Button variant="secondary" className="mt-6 w-full" onClick={logout}>
         ログアウト

@@ -4,7 +4,7 @@ import { createMemoryRouter, RouterProvider } from 'react-router'
 import type { Session } from '@supabase/supabase-js'
 import type { Profile } from '@/lib/database.types'
 import { AuthContext } from './auth-context'
-import { RequireAdmin, RequireMember } from './guards'
+import { RequireAdmin, RequireMember, RequireOnboarded } from './guards'
 
 const { signOut, maybeSingle } = vi.hoisted(() => ({
   signOut: vi.fn(async () => ({ error: null })),
@@ -46,6 +46,17 @@ function renderGuarded(path: string, auth: { session: Session | null; loading: b
         element: (
           <RequireMember>
             <p>home</p>
+          </RequireMember>
+        ),
+      },
+      { path: '/onboarding', element: <p>onboarding</p> },
+      {
+        path: '/app',
+        element: (
+          <RequireMember>
+            <RequireOnboarded>
+              <p>app page</p>
+            </RequireOnboarded>
           </RequireMember>
         ),
       },
@@ -121,5 +132,18 @@ describe('RequireAdmin', () => {
     maybeSingle.mockResolvedValue({ data: profile({ role: 'admin' }), error: null })
     renderGuarded('/admin', { session, loading: false })
     expect(await screen.findByText('admin page')).toBeInTheDocument()
+  })
+})
+
+describe('RequireOnboarded（初回設定、02 §2.2）', () => {
+  it('初回設定がまだなら初回設定へ', async () => {
+    maybeSingle.mockResolvedValue({ data: profile({}), error: null })
+    renderGuarded('/app', { session, loading: false })
+    expect(await screen.findByText('onboarding')).toBeInTheDocument()
+  })
+  it('初回設定が済んでいれば（スキップを含む）そのまま表示', async () => {
+    maybeSingle.mockResolvedValue({ data: profile({ onboarding_completed_at: '2026-11-03T00:00:00Z' }), error: null })
+    renderGuarded('/app', { session, loading: false })
+    expect(await screen.findByText('app page')).toBeInTheDocument()
   })
 })

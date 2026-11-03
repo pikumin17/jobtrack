@@ -46,3 +46,11 @@ export function RequireAdmin({ children }: { children: ReactNode }) {
   }
   return children
 }
+
+// 初回設定がまだなら、先に初回設定へ（スキップしても完了として記録する、02 §2.2）
+export function RequireOnboarded({ children }: { children: ReactNode }) {
+  const profile = useProfile()
+  if (!profile.data) return <LoadingScreen />
+  if (!profile.data.onboarding_completed_at) return <Navigate to="/onboarding" replace />
+  return children
+}

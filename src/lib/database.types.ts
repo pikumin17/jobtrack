@@ -63,6 +63,32 @@ export type CalendarItemType =
   | 'task'
 export type CalendarSourceTable = 'selection_steps' | 'events' | 'tasks'
 
+// 20261103000002。JSON バックアップ（設計書 02 §6）。checksum はブラウザで付ける
+export type BackupCounts = {
+  companies: number
+  selection_steps: number
+  events: number
+  tasks: number
+  timeline_entries?: number
+}
+export type BackupFile = {
+  format: 'jobtrack-backup'
+  schema_version: 1
+  exported_at: string
+  owner: { user_id: string; email: string }
+  counts: BackupCounts
+  data: {
+    profile: { display_name: string | null; graduation_year: number | null; purpose: string | null } | null
+    notification_settings: { types: string[]; offsets_days: number[]; send_hour_jst: number } | null
+    companies: Record<string, unknown>[]
+    selection_steps: Record<string, unknown>[]
+    events: Record<string, unknown>[]
+    tasks: Record<string, unknown>[]
+    timeline_entries: Record<string, unknown>[]
+  }
+  checksum?: string
+}
+
 export type DeleteAccountResult = {
   auth_user_deleted: boolean
   auth_log_entries_deleted: number | null
@@ -347,6 +373,15 @@ export type Database = {
       purge_company: {
         Args: { p_company_id: string }
         Returns: undefined
+      }
+      // 20261103000002。自分の全データの書き出しと、1トランザクションでの復元（所有者が違えば拒否）
+      export_my_data: {
+        Args: Record<PropertyKey, never>
+        Returns: BackupFile
+      }
+      restore_my_data: {
+        Args: { p_payload: BackupFile }
+        Returns: BackupCounts
       }
     }
     Enums: { [_ in never]: never }
