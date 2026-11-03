@@ -93,10 +93,9 @@ as $$
 declare
   v_uid       uuid := auth.uid();
   v_data      jsonb := p_payload -> 'data';
-  v_map       jsonb := '{}';
-  v_trashed   uuid[] := '{}';
+  v_map       jsonb := '{}'::jsonb;
+  v_trashed   uuid[] := '{}'::uuid[];
   v_new_id    uuid;
-  v_company   uuid;
   r           jsonb;
   v_counts    jsonb;
   c_limit     constant integer := 5 * 1024 * 1024;
