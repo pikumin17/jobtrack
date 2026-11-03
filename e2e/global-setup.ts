@@ -8,6 +8,8 @@ export default async function globalSetup(config: FullConfig) {
   psql(`delete from auth.users where email in ('${USERS.a.email}', '${USERS.b.email}')`)
   for (const user of Object.values(USERS)) {
     await createUser(user.email)
+    // 初回設定は済ませた状態にする（初回設定そのものは onboarding.spec.ts で確かめる）
+    psql(`update public.profiles set onboarding_completed_at = now() where email = '${user.email}'`)
     await saveLoginState(user.email, user.state, origin)
   }
 }
