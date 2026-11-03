@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* デザイントークン（設計書 02 §2.3）。色を変えるときは src/styles/contrast.test.ts も通ること */
 @theme {
@@ -17,7 +17,8 @@
   --color-danger: #a8251c;
   --color-danger-bg: #fbe9e7;
 
-  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  --font-sans:
+    'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', 'Yu Gothic UI', 'Meiryo', system-ui, sans-serif;
 }
 
 @layer base {

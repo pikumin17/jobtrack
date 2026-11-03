@@ -1,0 +1,258 @@
+{
+  "description": "企業全体の選考状態の判定表（設計書 02 §3.5.3）のテストケース。src/lib/status.test.ts と supabase/tests/database/06_selection_cases.test.sql（scripts/gen-selection-cases.mjs で生成）の両方が読む（2-02）",
+  "cases": [
+    {
+      "name": "ステップなし",
+      "final_outcome": null,
+      "steps": [],
+      "expected": { "status": "not_started", "reason": null }
+    },
+    {
+      "name": "全て未着手",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "not_started" },
+        { "position": 1, "status": "not_started" }
+      ],
+      "expected": { "status": "not_started", "reason": null }
+    },
+    {
+      "name": "予定あり",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "scheduled" },
+        { "position": 1, "status": "not_started" }
+      ],
+      "expected": { "status": "in_progress", "reason": null }
+    },
+    {
+      "name": "実施/提出済み",
+      "final_outcome": null,
+      "steps": [{ "position": 0, "status": "done" }],
+      "expected": { "status": "in_progress", "reason": null }
+    },
+    {
+      "name": "結果待ちが複数",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "awaiting_result" },
+        { "position": 1, "status": "awaiting_result" }
+      ],
+      "expected": { "status": "in_progress", "reason": null }
+    },
+    {
+      "name": "不合格",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "passed" },
+        { "position": 1, "status": "failed" }
+      ],
+      "expected": { "status": "rejected", "reason": null }
+    },
+    {
+      "name": "辞退",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "passed" },
+        { "position": 1, "status": "withdrawn" }
+      ],
+      "expected": { "status": "withdrawn", "reason": null }
+    },
+    {
+      "name": "全通過でも内定と推測しない（E-3）",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "passed" },
+        { "position": 1, "status": "passed" }
+      ],
+      "expected": { "status": "in_progress", "reason": null }
+    },
+    {
+      "name": "免除だけでも選考中",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "exempted" },
+        { "position": 1, "status": "not_started" }
+      ],
+      "expected": { "status": "in_progress", "reason": null }
+    },
+    {
+      "name": "免除と通過の混在",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "exempted" },
+        { "position": 1, "status": "passed" }
+      ],
+      "expected": { "status": "in_progress", "reason": null }
+    },
+    {
+      "name": "E-1 不合格の後ろが予定",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "failed" },
+        { "position": 1, "status": "scheduled" }
+      ],
+      "expected": { "status": "needs_review", "reason": "progress_after_failed" }
+    },
+    {
+      "name": "E-1 不合格の後ろが結果待ち",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "failed" },
+        { "position": 1, "status": "awaiting_result" }
+      ],
+      "expected": { "status": "needs_review", "reason": "progress_after_failed" }
+    },
+    {
+      "name": "E-1 不合格の後ろが通過",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "failed" },
+        { "position": 1, "status": "passed" }
+      ],
+      "expected": { "status": "needs_review", "reason": "progress_after_failed" }
+    },
+    {
+      "name": "E-1 不合格の後ろが実施済み",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "failed" },
+        { "position": 1, "status": "done" }
+      ],
+      "expected": { "status": "needs_review", "reason": "progress_after_failed" }
+    },
+    {
+      "name": "不合格の前が通過（順当）",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "passed" },
+        { "position": 1, "status": "passed" },
+        { "position": 2, "status": "failed" }
+      ],
+      "expected": { "status": "rejected", "reason": null }
+    },
+    {
+      "name": "不合格の後ろが免除だけなら不合格",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "failed" },
+        { "position": 1, "status": "exempted" }
+      ],
+      "expected": { "status": "rejected", "reason": null }
+    },
+    {
+      "name": "E-2 不合格と辞退の混在",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "withdrawn" },
+        { "position": 1, "status": "failed" }
+      ],
+      "expected": { "status": "needs_review", "reason": "failed_and_withdrawn" }
+    },
+    {
+      "name": "辞退の後ろが予定",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "withdrawn" },
+        { "position": 1, "status": "scheduled" }
+      ],
+      "expected": { "status": "needs_review", "reason": "progress_after_withdrawn" }
+    },
+    {
+      "name": "辞退の後ろが未着手だけ",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "withdrawn" },
+        { "position": 1, "status": "not_started" }
+      ],
+      "expected": { "status": "withdrawn", "reason": null }
+    },
+    {
+      "name": "E-8 不合格の後ろが未着手だけ",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "passed" },
+        { "position": 1, "status": "failed" },
+        { "position": 2, "status": "not_started" },
+        { "position": 3, "status": "not_started" }
+      ],
+      "expected": { "status": "rejected", "reason": null }
+    },
+    {
+      "name": "E-9 不合格を通過に戻した",
+      "final_outcome": null,
+      "steps": [
+        { "position": 0, "status": "passed" },
+        { "position": 1, "status": "passed" },
+        { "position": 2, "status": "scheduled" }
+      ],
+      "expected": { "status": "in_progress", "reason": null }
+    },
+    {
+      "name": "位置の番号が飛んでいても順序で判定",
+      "final_outcome": null,
+      "steps": [
+        { "position": 7, "status": "scheduled" },
+        { "position": 3, "status": "failed" }
+      ],
+      "expected": { "status": "needs_review", "reason": "progress_after_failed" }
+    },
+    {
+      "name": "不合格が後ろなら前の通過は問題なし（番号が飛ぶ）",
+      "final_outcome": null,
+      "steps": [
+        { "position": 2, "status": "passed" },
+        { "position": 9, "status": "failed" }
+      ],
+      "expected": { "status": "rejected", "reason": null }
+    },
+    {
+      "name": "結果を記録（内定）が最優先",
+      "final_outcome": "offer",
+      "steps": [{ "position": 0, "status": "passed" }],
+      "expected": { "status": "offer", "reason": null }
+    },
+    {
+      "name": "E-6 内定を記録し結果待ち・不合格が残る",
+      "final_outcome": "offer",
+      "steps": [
+        { "position": 0, "status": "awaiting_result" },
+        { "position": 1, "status": "failed" }
+      ],
+      "expected": { "status": "offer", "reason": null }
+    },
+    {
+      "name": "結果を記録（内定承諾）",
+      "final_outcome": "offer_accepted",
+      "steps": [],
+      "expected": { "status": "offer_accepted", "reason": null }
+    },
+    {
+      "name": "結果を記録（内定辞退）",
+      "final_outcome": "offer_declined",
+      "steps": [{ "position": 0, "status": "passed" }],
+      "expected": { "status": "offer_declined", "reason": null }
+    },
+    {
+      "name": "結果を記録（不合格）は要確認より優先",
+      "final_outcome": "rejected",
+      "steps": [
+        { "position": 0, "status": "failed" },
+        { "position": 1, "status": "scheduled" }
+      ],
+      "expected": { "status": "rejected", "reason": null }
+    },
+    {
+      "name": "結果を記録（辞退）",
+      "final_outcome": "withdrawn",
+      "steps": [{ "position": 0, "status": "scheduled" }],
+      "expected": { "status": "withdrawn", "reason": null }
+    },
+    {
+      "name": "結果を記録（終了・その他）",
+      "final_outcome": "closed_other",
+      "steps": [],
+      "expected": { "status": "closed_other", "reason": null }
+    }
+  ]
+}

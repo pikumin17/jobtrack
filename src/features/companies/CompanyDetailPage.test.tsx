@@ -1,0 +1,280 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router'
+import type { Company } from '@/lib/database.types'
+import { CompanyDetailPage } from './CompanyDetailPage'
+
+// supabase.from('companies') の呼び出しを記録する簡易モック
+const { state } = vi.hoisted(() => ({
+  state: {
+    company: null as Company | null,
+    updates: [] as unknown[],
+    updateError: null as unknown,
+    rpcs: [] as unknown[],
+    timeline: [] as unknown[],
+  },
+}))
+vi.mock('@/lib/supabase', () => ({
+  supabase: {
+    rpc: async (name: string, args: unknown) => {
+      state.rpcs.push({ name, args })
+      return { error: null }
+    },
+    from: (table: string) =>
+      table === 'selection_steps'
+        ? { select: () => ({ eq: () => ({ order: async () => ({ data: [], error: null }) }) }) }
+        : table === 'timeline_entries'
+          ? {
+              select: () => ({
+                eq: () => ({
+                  order: () => ({ order: () => ({ limit: async () => ({ data: state.timeline, error: null }) }) }),
+                }),
+              }),
+            }
+          : {
+              select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.company, error: null }) }) }),
+              update: (values: unknown) => ({
+                eq: () => ({
+                  select: async () => {
+                    if (state.updateError) return { data: null, error: state.updateError }
+                    state.updates.push(values)
+                    state.company = { ...state.company!, ...(values as Partial<Company>) }
+                    return { data: [{ id: state.company.id }], error: null }
+                  },
+                }),
+              }),
+            },
+  },
+}))
+
+function company(overrides: Partial<Company> = {}): Company {
+  return {
+    id: 'c1',
+    user_id: 'u1',
+    name: 'サンプル株式会社',
+    application_type: null,
+    preference: null,
+    application_status: 'not_applied',
+    applied_on: null,
+    job_type: null,
+    location: null,
+    channel: null,
+    recruit_url: null,
+    mypage_url: null,
+    login_id_hint: null,
+    contact_person: null,
+    memo: null,
+    selection_status: 'not_started',
+    selection_status_reason: null,
+    final_outcome: null,
+    final_outcome_at: null,
+    closed_reason: null,
+    deleted_at: null,
+    created_at: '2026-10-12T00:00:00Z',
+    updated_at: '2026-10-12T00:00:00Z',
+    ...overrides,
+  }
+}
+
+function renderPage() {
+  return render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter initialEntries={['/companies/c1']}>
+        <Routes>
+          <Route path="/companies/:id" element={<CompanyDetailPage />} />
+          <Route path="/companies" element={<p>企業一覧の画面</p>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+}
+
+beforeEach(() => {
+  state.company = company()
+  state.updates = []
+  state.updateError = null
+  state.rpcs = []
+  state.timeline = []
+  vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-10-13T16:30:00Z') }) // JST 10/14 01:30
+})
+afterEach(() => vi.useRealTimers())
+
+describe('企業詳細', () => {
+  it('新しい企業は未応募で、任意項目は未入力と表示する', async () => {
+    renderPage()
+    expect(await screen.findByRole('heading', { name: 'サンプル株式会社' })).toBeInTheDocument()
+    expect(screen.getAllByText('未応募').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('未入力')).toHaveLength(9)
+    expect(screen.getByText('未設定')).toBeInTheDocument()
+  })
+
+  it('「応募済みにする」は JST の今日を初期値にし、応募状態と応募日を一緒に保存する', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: '応募済みにする' }))
+    const dialog = screen.getByRole('dialog', { name: '応募済みにする' })
+    expect(within(dialog).getByLabelText('応募日')).toHaveValue('2026-10-14')
+    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+    expect(state.updates).toEqual([{ application_status: 'applied', applied_on: '2026-10-14' }])
+    expect(await screen.findByText('応募済み 10/14(水)')).toBeInTheDocument()
+  })
+
+  it('「未応募に戻す」は確認してから応募日を空にする。ステップは変えないと伝える', async () => {
+    state.company = company({ application_status: 'applied', applied_on: '2026-10-01' })
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: '未応募に戻す' }))
+    const dialog = screen.getByRole('dialog', { name: '未応募に戻しますか？' })
+    expect(within(dialog).getByText('選考ステップは変更されません。')).toBeInTheDocument()
+    expect(state.updates).toEqual([])
+    await user.click(within(dialog).getByRole('button', { name: '未応募に戻す' }))
+    expect(state.updates).toEqual([{ application_status: 'not_applied', applied_on: null }])
+  })
+
+  it('志望度は星で設定し、「未設定に戻す」で null にする', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: '志望度 4 本命候補' }))
+    expect(await screen.findByText('4 本命候補')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '未設定に戻す' }))
+    expect(state.updates).toEqual([{ preference: 4 }, { preference: null }])
+  })
+
+  it('編集フォームで javascript: の URL は保存せず、項目の横にエラーを出す', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: '編集' }))
+    const dialog = screen.getByRole('dialog', { name: '企業情報を編集' })
+    await user.type(within(dialog).getByLabelText('採用ページ'), 'javascript:alert(1)')
+    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+    expect(
+      within(dialog).getByText('採用ページは http:// か https:// で始まるURLを入力してください'),
+    ).toBeInTheDocument()
+    expect(state.updates).toEqual([])
+  })
+
+  it('編集フォームで任意項目を保存できる（空欄は null）', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: '編集' }))
+    const dialog = screen.getByRole('dialog', { name: '企業情報を編集' })
+    expect(within(dialog).getByText('パスワードは入力しないでください。')).toBeInTheDocument()
+    await user.type(within(dialog).getByLabelText('職種'), '企画職')
+    await user.selectOptions(within(dialog).getByLabelText('応募経路'), 'agent')
+    await user.type(within(dialog).getByLabelText('採用ページ'), 'https://example.com/recruit')
+    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+    expect(state.updates).toEqual([
+      {
+        name: 'サンプル株式会社',
+        application_type: null,
+        job_type: '企画職',
+        location: null,
+        channel: 'agent',
+        recruit_url: 'https://example.com/recruit',
+        mypage_url: null,
+        login_id_hint: null,
+        contact_person: null,
+        memo: null,
+      },
+    ])
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(await screen.findByRole('link', { name: 'https://example.com/recruit' })).toHaveAttribute(
+      'rel',
+      'noopener noreferrer',
+    )
+  })
+
+  it('ゴミ箱内の企業は編集の操作を出さない', async () => {
+    state.company = company({ deleted_at: '2026-10-13T00:00:00Z' })
+    renderPage()
+    expect(await screen.findByText(/ゴミ箱に入っています/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '編集' })).toBeNull()
+    expect(screen.queryByRole('button', { name: '応募済みにする' })).toBeNull()
+    expect(screen.getByRole('button', { name: '志望度 3 興味あり' })).toBeDisabled()
+  })
+
+  it('見つからない企業（他人の企業を含む）は「見つかりません」と出す', async () => {
+    state.company = null
+    renderPage()
+    expect(await screen.findByText('企業が見つかりません')).toBeInTheDocument()
+  })
+
+  it('DB が拒否したときは日本語の理由を出す', async () => {
+    state.updateError = { code: '55000', message: 'ゴミ箱に入っている企業は変更できません。先に復元してください' }
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: '志望度 5 第一志望' }))
+    expect(await screen.findByText('ゴミ箱に入っている企業は変更できません。先に復元してください')).toBeInTheDocument()
+  })
+  it('「結果を記録」で結果と終了理由を保存し、取り消すと理由も消す', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: '結果を記録' }))
+    let sheet = screen.getByRole('dialog', { name: '結果を記録' })
+    await user.click(within(sheet).getByRole('radio', { name: '不合格' }))
+    await user.selectOptions(within(sheet).getByLabelText('終了理由（任意）'), 'rejected_interview')
+    await user.click(within(sheet).getByRole('button', { name: '記録する' }))
+    expect(state.updates).toEqual([{ final_outcome: 'rejected', closed_reason: 'rejected_interview' }])
+    expect(await screen.findByText('理由: 面接不合格')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '結果を記録' }))
+    sheet = screen.getByRole('dialog', { name: '結果を記録' })
+    await user.click(within(sheet).getByRole('radio', { name: '内定' }))
+    expect(within(sheet).queryByLabelText('終了理由（任意）')).toBeNull()
+    await user.click(within(sheet).getByRole('button', { name: '記録する' }))
+    await user.click(await screen.findByRole('button', { name: '結果を記録' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: '記録を取り消す' }))
+    expect(state.updates.slice(1)).toEqual([
+      { final_outcome: 'offer', closed_reason: null },
+      { final_outcome: null, closed_reason: null },
+    ])
+  })
+  it('履歴を新しい順に出す（書き換えの操作はない）', async () => {
+    state.timeline = [
+      {
+        id: 't2',
+        company_id: 'c1',
+        entity_type: 'company',
+        action: 'application_changed',
+        summary: '応募状態: 未応募 → 応募済み（応募日 10/12）',
+        occurred_at: '2026-10-12T03:00:00Z',
+      },
+      {
+        id: 't1',
+        company_id: 'c1',
+        entity_type: 'company',
+        action: 'created',
+        summary: '企業を登録',
+        occurred_at: '2026-10-12T01:00:00Z',
+      },
+    ]
+    renderPage()
+    const list = await screen.findByRole('list', { name: '履歴の一覧' })
+    expect(
+      within(list)
+        .getAllByRole('listitem')
+        .map((li) => li.textContent),
+    ).toEqual(['10/12(月) 12:00応募状態: 未応募 → 応募済み（応募日 10/12）', '10/12(月) 10:00企業を登録'])
+  })
+
+  it('ゴミ箱に入れるときは確認し、一覧に戻る', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: 'ゴミ箱に入れる' }))
+    const sheet = screen.getByRole('dialog', { name: 'ゴミ箱に入れますか？' })
+    expect(state.rpcs).toEqual([])
+    await user.click(within(sheet).getByRole('button', { name: 'ゴミ箱に入れる' }))
+    expect(state.rpcs).toEqual([{ name: 'trash_company', args: { p_company_id: 'c1' } }])
+    expect(await screen.findByText('企業一覧の画面')).toBeInTheDocument()
+  })
+
+  it('ゴミ箱内の企業は詳細から復元できる', async () => {
+    state.company = company({ deleted_at: '2026-10-13T00:00:00Z' })
+    const user = userEvent.setup()
+    renderPage()
+    await user.click(await screen.findByRole('button', { name: '復元' }))
+    expect(state.rpcs).toEqual([{ name: 'restore_company', args: { p_company_id: 'c1' } }])
+    expect(screen.queryByRole('button', { name: 'ゴミ箱に入れる' })).toBeNull()
+  })
+})

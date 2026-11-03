@@ -33,6 +33,8 @@ const pairs: [string, string][] = [
   ['sage-800', 'sage-100'],
   ['surface', 'sage-700'],
   ['warn', 'warn-bg'],
+  ['warn', 'surface'],
+  ['muted', 'sage-100'],
   ['danger', 'danger-bg'],
   ['danger', 'surface'],
 ]

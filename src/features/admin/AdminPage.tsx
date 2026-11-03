@@ -40,7 +40,11 @@ export function AdminPage() {
   }
 
   function confirmRevoke(row: MemberRow) {
-    if (window.confirm(`${row.email} の招待を取り消しますか？\nデータは消えず、ログインとデータの利用だけが止まります。再招待すると元に戻ります。`)) {
+    if (
+      window.confirm(
+        `${row.email} の招待を取り消しますか？\nデータは消えず、ログインとデータの利用だけが止まります。再招待すると元に戻ります。`,
+      )
+    ) {
       revoke.mutate(row.email)
     }
   }
@@ -54,7 +58,9 @@ export function AdminPage() {
 
       <form onSubmit={submit} className="mb-6 space-y-3 rounded-2xl border border-line bg-surface p-4" noValidate>
         <div>
-          <label htmlFor="invite-email" className="text-sm font-semibold">Googleアカウントのメールアドレス</label>
+          <label htmlFor="invite-email" className="text-sm font-semibold">
+            Googleアカウントのメールアドレス
+          </label>
           <input
             id="invite-email"
             type="email"
@@ -65,7 +71,9 @@ export function AdminPage() {
           />
         </div>
         <div>
-          <label htmlFor="invite-note" className="text-sm font-semibold">メモ（任意）</label>
+          <label htmlFor="invite-note" className="text-sm font-semibold">
+            メモ（任意）
+          </label>
           <input
             id="invite-note"
             value={note}
@@ -76,12 +84,22 @@ export function AdminPage() {
           />
         </div>
         {formError && <p className="text-sm text-danger">{formError}</p>}
-        {invite.isError && <ErrorMessage message={userFacingMessage(invite.error, '招待できませんでした。もう一度お試しください。')} />}
-        <Button type="submit" disabled={invite.isPending}>{invite.isPending ? '招待中…' : '招待する'}</Button>
+        {invite.isError && (
+          <ErrorMessage message={userFacingMessage(invite.error, '招待できませんでした。もう一度お試しください。')} />
+        )}
+        <Button type="submit" disabled={invite.isPending}>
+          {invite.isPending ? '招待中…' : '招待する'}
+        </Button>
       </form>
 
       <h2 className="mb-2 font-bold">メンバー</h2>
-      {revoke.isError && <div className="mb-3"><ErrorMessage message={userFacingMessage(revoke.error, '取り消しできませんでした。もう一度お試しください。')} /></div>}
+      {revoke.isError && (
+        <div className="mb-3">
+          <ErrorMessage
+            message={userFacingMessage(revoke.error, '取り消しできませんでした。もう一度お試しください。')}
+          />
+        </div>
+      )}
       {members.isPending ? (
         <LoadingScreen />
       ) : members.isError ? (
@@ -95,17 +113,28 @@ export function AdminPage() {
                 <div className="min-w-0">
                   <p className="font-semibold break-all">
                     {row.email}
-                    {row.role === 'admin' && <span className="ml-2 rounded-full bg-sage-100 px-2 py-0.5 text-xs text-sage-800">管理者</span>}
+                    {row.role === 'admin' && (
+                      <span className="ml-2 rounded-full bg-sage-100 px-2 py-0.5 text-xs text-sage-800">管理者</span>
+                    )}
                   </p>
                   <p className="text-xs text-muted">
-                    {revoked ? '取り消し済み' : !row.user_id ? '未ログイン' : row.status === 'active' ? '利用中' : '停止中（「再招待」で有効にできます）'}
+                    {revoked
+                      ? '取り消し済み'
+                      : !row.user_id
+                        ? '未ログイン'
+                        : row.status === 'active'
+                          ? '利用中'
+                          : '停止中（「再招待」で有効にできます）'}
                     {row.note ? `・${row.note}` : ''}
                     {row.last_sign_in_at ? `・最終ログイン ${formatJstDateTime(row.last_sign_in_at)}` : ''}
                   </p>
                 </div>
                 {revoked || (row.user_id && row.status !== 'active') ? (
                   <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" onClick={() => invite.mutate({ email: row.email, note: row.note ?? '' })}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => invite.mutate({ email: row.email, note: row.note ?? '' })}
+                    >
                       再招待
                     </Button>
                     {/* 完全削除は取り消し済みの人だけ（自分・管理者には出さない。DB 側でも拒否する） */}
@@ -122,7 +151,9 @@ export function AdminPage() {
                     )}
                   </div>
                 ) : row.email !== myEmail ? (
-                  <Button variant="danger" onClick={() => confirmRevoke(row)}>取り消し</Button>
+                  <Button variant="danger" onClick={() => confirmRevoke(row)}>
+                    取り消し
+                  </Button>
                 ) : null}
               </li>
             )

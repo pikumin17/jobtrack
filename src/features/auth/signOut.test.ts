@@ -27,11 +27,13 @@ describe('signOutAndClear', () => {
 
   it('ログアウトの通信が失敗しても、端末のログイン情報は消える', async () => {
     window.localStorage.setItem('sb-abcdefgh-auth-token', '{"access_token":"x"}')
-    window.localStorage.setItem('jobtrack-view', 'compact')
+    window.localStorage.setItem('jobtrack.companies.view', 'card')
+    window.localStorage.setItem('jobtrack.dismissedWarnings', '["x"]')
     signOut.mockResolvedValueOnce({ error: new Error('network') })
     await signOutAndClear(new QueryClient())
     expect(window.localStorage.getItem('sb-abcdefgh-auth-token')).toBeNull()
-    expect(window.localStorage.getItem('jobtrack-view')).toBe('compact')
+    expect(window.localStorage.getItem('jobtrack.dismissedWarnings')).toBeNull()
+    expect(window.localStorage.getItem('jobtrack.companies.view')).toBe('card')
   })
 
   it('ログアウト処理が例外を投げても、端末のログイン情報は消える', async () => {

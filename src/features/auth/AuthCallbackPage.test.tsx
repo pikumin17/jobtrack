@@ -35,7 +35,10 @@ beforeEach(() => {
 
 describe('AuthCallbackPage', () => {
   it('招待判定で拒否されたら招待外の画面へ', async () => {
-    renderCallback('/auth/callback?error=access_denied&error_description=' + encodeURIComponent('このアカウントは招待されていません'))
+    renderCallback(
+      '/auth/callback?error=access_denied&error_description=' +
+        encodeURIComponent('このアカウントは招待されていません'),
+    )
     expect(await screen.findByText('not invited')).toBeInTheDocument()
   })
 

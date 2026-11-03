@@ -63,28 +63,46 @@ export function DeleteAccountDialog({ email, pending, error, onConfirm, onClose 
       >
         {step === 1 && (
           <>
-            <h2 id={titleId} className="text-lg font-bold">アカウントを完全に削除しますか？（1/2）</h2>
-            <p className="mt-3 text-sm">対象：<span className="font-semibold break-all">{email}</span></p>
+            <h2 id={titleId} className="text-lg font-bold">
+              アカウントを完全に削除しますか？（1/2）
+            </h2>
+            <p className="mt-3 text-sm">
+              対象：<span className="font-semibold break-all">{email}</span>
+            </p>
             <p className="mt-3 text-sm">次のものがすべて削除されます。</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-sm">
-              {DELETED_ITEMS.map((item) => <li key={item}>{item}</li>)}
+              {DELETED_ITEMS.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
             </ul>
-            <p className="mt-3 text-sm font-semibold text-danger">削除すると元に戻せません。再招待しても、データは戻りません。</p>
-            <p className="mt-2 text-xs text-muted">管理操作の記録には、日時と操作の種類だけが残ります（メールアドレスは消えます）。</p>
+            <p className="mt-3 text-sm font-semibold text-danger">
+              削除すると元に戻せません。再招待しても、データは戻りません。
+            </p>
+            <p className="mt-2 text-xs text-muted">
+              管理操作の記録には、日時と操作の種類だけが残ります（メールアドレスは消えます）。
+            </p>
             <div className="mt-6 flex justify-end gap-2">
-              <Button variant="secondary" onClick={onClose}>やめる</Button>
-              <Button variant="danger" onClick={() => setStep(2)}>次へ</Button>
+              <Button variant="secondary" onClick={onClose}>
+                やめる
+              </Button>
+              <Button variant="danger" onClick={() => setStep(2)}>
+                次へ
+              </Button>
             </div>
           </>
         )}
 
         {step === 2 && (
           <>
-            <h2 id={titleId} className="text-lg font-bold">確認のため、メールアドレスを入力してください（2/2）</h2>
+            <h2 id={titleId} className="text-lg font-bold">
+              確認のため、メールアドレスを入力してください（2/2）
+            </h2>
             <p className="mt-3 text-sm">
               削除する <span className="font-semibold break-all">{email}</span> を、下の欄にそのまま入力してください。
             </p>
-            <label htmlFor="delete-confirm" className="mt-4 block text-sm font-semibold">削除するアカウントのメールアドレス</label>
+            <label htmlFor="delete-confirm" className="mt-4 block text-sm font-semibold">
+              削除するアカウントのメールアドレス
+            </label>
             <input
               id="delete-confirm"
               type="email"
@@ -94,9 +112,15 @@ export function DeleteAccountDialog({ email, pending, error, onConfirm, onClose 
               onPaste={(e) => e.preventDefault()}
               className="mt-1 min-h-11 w-full rounded-xl border border-line bg-cream px-3 text-base"
             />
-            {error ? <div className="mt-3"><ErrorMessage message={userFacingMessage(error, '削除できませんでした。もう一度お試しください。')} /></div> : null}
+            {error ? (
+              <div className="mt-3">
+                <ErrorMessage message={userFacingMessage(error, '削除できませんでした。もう一度お試しください。')} />
+              </div>
+            ) : null}
             <div className="mt-6 flex justify-end gap-2">
-              <Button variant="secondary" onClick={onClose} disabled={pending}>やめる</Button>
+              <Button variant="secondary" onClick={onClose} disabled={pending}>
+                やめる
+              </Button>
               <Button variant="danger" onClick={confirm} disabled={!confirmationMatches(email, typed) || pending}>
                 {pending ? '削除中…' : '完全に削除する'}
               </Button>
@@ -106,14 +130,19 @@ export function DeleteAccountDialog({ email, pending, error, onConfirm, onClose 
 
         {step === 'done' && (
           <>
-            <h2 id={titleId} className="text-lg font-bold">削除しました</h2>
+            <h2 id={titleId} className="text-lg font-bold">
+              削除しました
+            </h2>
             <p className="mt-3 text-sm break-all">{email} のアカウントとデータを削除しました。</p>
             {result?.auth_log_entries_deleted === null && (
               <p className="mt-2 text-sm text-muted">
-                Supabase のログイン記録は、権限の都合で削除できませんでした。Supabase のログの保持期間が過ぎると自動で消えます。
+                Supabase のログイン記録は、権限の都合で削除できませんでした。Supabase
+                のログの保持期間が過ぎると自動で消えます。
               </p>
             )}
-            <p className="mt-2 text-sm text-muted">Google Cloud のテストユーザーに登録している場合は、そちらからも外してください。</p>
+            <p className="mt-2 text-sm text-muted">
+              Google Cloud のテストユーザーに登録している場合は、そちらからも外してください。
+            </p>
             <div className="mt-6 flex justify-end">
               <Button onClick={onClose}>閉じる</Button>
             </div>

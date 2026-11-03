@@ -5,7 +5,12 @@ const USER_FACING_CODES = new Set(['42501', '22023', 'P0002', '55000'])
 export function userFacingMessage(error: unknown, fallback: string): string {
   if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
     const { code, message } = error as { code: unknown; message: unknown }
-    if (typeof code === 'string' && USER_FACING_CODES.has(code) && typeof message === 'string' && /[ぁ-んァ-ン一-龥]/.test(message)) {
+    if (
+      typeof code === 'string' &&
+      USER_FACING_CODES.has(code) &&
+      typeof message === 'string' &&
+      /[ぁ-んァ-ン一-龥]/.test(message)
+    ) {
       return message
     }
   }

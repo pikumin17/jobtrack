@@ -63,6 +63,30 @@ export function formatJstDateTime(value: Date | string): string {
   return `${formatJstDate(instant)} ${format(instant, 'HH:mm', { in: inTokyo })}`
 }
 
+/** 表示用（短い形）: 10/15(水)。時刻があれば 10/15(水) 14:00 */
+export function formatJstShort(value: Date | string, withTime = false): string {
+  const instant = typeof value === 'string' && isDateOnly(value) ? startOfJstDay(value) : toInstant(value)
+  const day = `${format(instant, 'M/d', { in: inTokyo })}(${WEEKDAYS_JA[Number(format(instant, 'i', { in: inTokyo })) % 7]})`
+  return withTime ? `${day} ${format(instant, 'HH:mm', { in: inTokyo })}` : day
+}
+
+/** 入力欄（datetime-local）に入れる値: その瞬間の JST の 'YYYY-MM-DDTHH:mm' */
+export function toJstDateTimeInput(value: Date | string): string {
+  return format(toInstant(value), "yyyy-MM-dd'T'HH:mm", { in: inTokyo })
+}
+
+const DATE_TIME_INPUT = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})$/
+
+/** 入力欄（datetime-local）の値を JST の時刻として解釈し、保存用の ISO 文字列（UTC）にする。形式が違えば null */
+export function fromJstDateTimeInput(value: string): string | null {
+  const m = DATE_TIME_INPUT.exec(value)
+  if (!m || !isDateOnly(m[1]!)) return null
+  const hours = Number(m[2])
+  const minutes = Number(m[3])
+  if (hours > 23 || minutes > 59) return null
+  return new Date(startOfJstDay(m[1]!).getTime() + (hours * 60 + minutes) * 60 * 1000).toISOString()
+}
+
 // ISO 曜日（1=月 … 7=日）を % 7 して引く
 const WEEKDAYS_JA = ['日', '月', '火', '水', '木', '金', '土'] as const
 

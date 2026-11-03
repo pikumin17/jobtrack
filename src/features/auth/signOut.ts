@@ -16,7 +16,8 @@ export async function signOutAndClear(queryClient: QueryClient) {
 function removeStoredSessions() {
   try {
     for (const key of Object.keys(window.localStorage)) {
-      if (/^sb-.+-auth-token/.test(key)) window.localStorage.removeItem(key)
+      // ログイン情報と、利用者のデータに結び付く記憶（入力警告の「このまま」）を消す。表示の好みは残す
+      if (/^sb-.+-auth-token/.test(key) || key === 'jobtrack.dismissedWarnings') window.localStorage.removeItem(key)
     }
   } catch {
     // 保存領域が使えない環境では、消すものもない

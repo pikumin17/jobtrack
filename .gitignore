@@ -8,3 +8,8 @@ coverage
 .DS_Store
 supabase/.branches
 supabase/.temp
+
+# E2E（Playwright）の結果とログイン状態（CI のローカル Supabase 専用）
+test-results
+playwright-report
+e2e/.auth

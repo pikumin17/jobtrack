@@ -41,8 +41,24 @@ function renderGuarded(path: string, auth: { session: Session | null; loading: b
     [
       { path: '/login', element: <p>login</p> },
       { path: '/not-invited', element: <p>not invited</p> },
-      { path: '/', element: <RequireMember><p>home</p></RequireMember> },
-      { path: '/admin', element: <RequireMember><RequireAdmin><p>admin page</p></RequireAdmin></RequireMember> },
+      {
+        path: '/',
+        element: (
+          <RequireMember>
+            <p>home</p>
+          </RequireMember>
+        ),
+      },
+      {
+        path: '/admin',
+        element: (
+          <RequireMember>
+            <RequireAdmin>
+              <p>admin page</p>
+            </RequireAdmin>
+          </RequireMember>
+        ),
+      },
     ],
     { initialEntries: [path] },
   )

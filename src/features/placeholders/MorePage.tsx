@@ -28,14 +28,23 @@ export function MorePage() {
         <p className="font-semibold break-all">{session?.user.email}</p>
       </section>
       <ul className="mt-4 divide-y divide-line rounded-2xl border border-line bg-surface">
+        <li>
+          <Link to="/more/trash" className="flex min-h-12 items-center px-4 font-semibold">
+            ゴミ箱
+          </Link>
+        </li>
         {profile.data?.role === 'admin' && (
           <li>
-            <Link to="/more/admin" className="flex min-h-12 items-center px-4 font-semibold">招待管理</Link>
+            <Link to="/more/admin" className="flex min-h-12 items-center px-4 font-semibold">
+              招待管理
+            </Link>
           </li>
         )}
         <li className="flex min-h-12 items-center px-4 text-muted">設定・通知・バックアップ（フェーズ3〜4で追加）</li>
       </ul>
-      <Button variant="secondary" className="mt-6 w-full" onClick={logout}>ログアウト</Button>
+      <Button variant="secondary" className="mt-6 w-full" onClick={logout}>
+        ログアウト
+      </Button>
     </>
   )
 }
